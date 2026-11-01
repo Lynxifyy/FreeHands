@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 android {
     namespace "dev.openhands.agentcanvas"
@@ -10,10 +12,57 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Cloud inference route for the agent. Supplied at build time (never
+        // committed): gradle properties, environment, or an empty default that
+        // leaves the agent on the on-device route only.
+        buildConfigField "String", "FREEFHANDS_CLOUD_BASE_URL",
+                "\"${project.findProperty('freehandsCloudBaseUrl') ?: System.getenv('FREEFHANDS_CLOUD_BASE_URL') ?: ''}\""
+        buildConfigField "String", "FREEFHANDS_CLOUD_API_KEY",
+                "\"${project.findProperty('freehandsCloudApiKey') ?: System.getenv('FREEFHANDS_CLOUD_API_KEY') ?: ''}\""
+        buildConfigField "String", "FREEFHANDS_CLOUD_MODEL",
+                "\"${project.findProperty('freehandsCloudModel') ?: System.getenv('FREEFHANDS_CLOUD_MODEL') ?: 'gpt-5.5'}\""
+        ndk {
+            // Package the native capture bridge for the ABIs the app ships.
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++17 -fexceptions'
+            }
+        }
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+    buildFeatures {
+        compose true
+        // BuildConfig carries the cloud inference route supplied at build time.
+        buildConfig true
+    }
+    testOptions {
+        unitTests {
+            // The agent-stack unit tests exercise pure logic and do not touch
+            // the framework, so unmocked android.* stubs returning defaults is
+            // exactly the behaviour we want.
+            returnDefaultValues = true
+        }
+    }
+    kotlinOptions {
+        jvmTarget = '21'
+    }
+    packagingOptions {
+        // The native bridge is loaded through System.loadLibrary; keep the
+        // uncompressed .so so it can be mapped without extraction.
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
     buildTypes {
@@ -45,6 +94,24 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // Free Hands agent stack: Compose UI, coroutines and lifecycle-aware state.
+    implementation platform("androidx.compose:compose-bom:$composeBomVersion")
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.compose.material3:material3"
+    implementation "androidx.activity:activity-compose:$composeActivityVersion"
+    implementation "androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+
+    debugImplementation "androidx.compose.ui:ui-tooling"
+
+    // Unit tests run on the JVM: org.json is part of Android but not of the
+    // JVM, so the tests need a real implementation on the classpath.
+    testImplementation "org.json:json:$jsonVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
 }
 
 apply from: 'capacitor.build.gradle'
