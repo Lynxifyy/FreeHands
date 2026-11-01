@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FreeHands mobile agent stack — design</title>
+<style>
+  :root { --ink:#16181d; --muted:#5b6472; --line:#e3e6ec; --bg:#fbfbfd;
+          --code:#f4f5f8; --accent:#2f6f4f; --warn:#8a4b1f; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2.5rem 1.5rem 5rem; background:var(--bg); color:var(--ink);
+         font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  main { max-width: 60rem; margin:0 auto; }
+  h1 { font-size:1.9rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  h2 { font-size:1.25rem; margin:2.6rem 0 .7rem; padding-bottom:.35rem; border-bottom:1px solid var(--line); }
+  h3 { font-size:1.02rem; margin:1.6rem 0 .5rem; }
+  p, li { color:#22252c; }
+  .lede { color:var(--muted); font-size:1.03rem; margin:0 0 1.4rem; }
+  code, pre { font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  code { background:var(--code); padding:.1rem .3rem; border-radius:3px; font-size:.88em; }
+  pre { background:var(--code); border:1px solid var(--line); border-radius:6px;
+        padding:.85rem 1rem; overflow-x:auto; font-size:.82rem; line-height:1.5; }
+  table { border-collapse:collapse; width:100%; margin:.6rem 0 1rem; font-size:.9rem; }
+  th, td { text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
+  @media (max-width:760px){ .cols { grid-template-columns:1fr; } }
+  .panel { border:1px solid var(--line); border-radius:8px; padding:.85rem 1rem; background:#fff; }
+  .panel h3 { margin-top:0; }
+  .before { border-left:3px solid #b4453a; }
+  .after { border-left:3px solid var(--accent); }
+  .note { border-left:3px solid var(--warn); background:#fdf7f1; padding:.7rem .9rem; border-radius:0 6px 6px 0; }
+  .ok { color:var(--accent); font-weight:600; }
+  ul { padding-left:1.15rem; }
+  .muted { color:var(--muted); font-size:.88rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>FreeHands: a mobile agent stack</h1>
+<p class="lede">Phases 1&ndash;3 of a phone-side agent: a native capture bridge, a bounded
+agent loop, and an on-device inference engine &mdash; all inside the 150&nbsp;ms latency budget.</p>
+
+<h2>What this PR is</h2>
+<p>Three phases, each independently testable, all async, all under one latency budget.
+Phase&nbsp;1 and Phase&nbsp;2 landed earlier in this branch; Phase&nbsp;3 is the substance of the
+latest commits.</p>
+
+<table>
+  <tr><th>Phase</th><th>Component</th><th>Status</th></tr>
+  <tr><td>1</td><td><code>ScrcpyBridge.cpp</code>, <code>LiveFeedActivity.kt</code> &mdash; capture, encode, stream</td><td class="ok">done</td></tr>
+  <tr><td>2</td><td><code>AgentLoop</code> + bounded <code>ConversationManager</code> + <code>AgentMetrics</code></td><td class="ok">done</td></tr>
+  <tr><td>3</td><td><code>LiteRTEngine.cpp</code> &mdash; on-device inference, wired to Kotlin</td><td class="ok">done</td></tr>
+</table>
+
+<h2>Phase 3: the gap that was closed</h2>
+
+<div class="cols">
+  <div class="panel before">
+    <h3>Before</h3>
+    <p>Kotlin already declared the interface it wanted:</p>
+<pre>// InferenceAdapters.kt
+private external fun nativeOpen(path: String): Long
+private external fun nativeGenerate(h: Long, p: String, t: Int): String
+private external fun nativeClose(handle: Long)
+// System.loadLibrary("litertlm")</pre>
+    <p>No <code>liblitertlm</code> existed. <code>loadLibrary</code> threw
+    <code>UnsatisfiedLinkError</code>, <code>isAvailable</code> stayed false, and
+    <strong>every request silently fell through to the cloud</strong>. The
+    "offline-first" promise only held while the network held.</p>
+  </div>
+  <div class="panel after">
+    <h3>After</h3>
+    <p>A real engine, host-testable, plus the JNI bridge:</p>
+<pre>cpp/src/  memory_pool.cpp  kernel_backend.cpp
+          tokenizer.cpp    quantization.cpp
+          kv_cache.cpp     model.cpp
+          litert_engine.cpp
+          litert_engine_jni.cpp   <-- liblitertlm</pre>
+    <p>The engine has <em>no Android headers</em>. It builds and runs on the
+    host, so the whole path &mdash; tokenize &rarr; prefill &rarr; decode &mdash; is
+    covered by tests, not only by a device run.</p>
+  </div>
+</div>
+
+<h3>Engine internals</h3>
+<table>
+  <tr><th>Unit</th><th>Why it exists</th></tr>
+  <tr><td><code>MemoryPool</code></td><td>One reserved block for activations, reset per step. A fresh allocation on Android can trigger a stop-the-world GC mid-stream, which surfaces as a dropped frame.</td></tr>
+  <tr><td><code>KernelBackend</code></td><td>The matmul seam. <code>CpuKernelBackend</code> is the portable reference; a LiteRT-LM delegate implements the same two calls, so a GPU path touches no other file.</td></tr>
+  <tr><td><code>Tokenizer</code></td><td>BPE over the model's piece table, greedy longest match with a byte fallback, so encoding never fails on unknown input.</td></tr>
+  <tr><td><code>QuantizedTensor</code></td><td>4-bit and 8-bit affine weights, per-block scales, decoded a row at a time during the matmul &mdash; a 4-bit checkpoint keeps its memory saving <em>while it runs</em>.</td></tr>
+  <tr><td><code>KVCache</code></td><td>Paged keys and values with a ring policy. Pages never move once written, so per-token cost stays flat instead of rising with sequence length.</td></tr>
+  <tr><td><code>ModelLoader</code></td><td>Reads a <code>.litertlm</code> container. A wrong signature or version is refused <em>with a reason</em> rather than partially loaded, because a half-loaded model produces plausible-looking garbage.</td></tr>
+  <tr><td><code>LiteRTEngine</code></td><td>Causal attention with a real softmax, layer norm, SiLU MLP. Greedy sampling by default so the agent's structured output is reproducible. Per-token streaming, cancellation, thermal cutoff, prefill/decode stats.</td></tr>
+</table>
+
+<h2>The 150 ms budget, enforced not asserted</h2>
+<p>The budget is a runtime object, not a comment. <code>LatencyBudget</code> owns the
+target and the per-stage samples; the capture bridge takes it as a constructor
+argument and the queue drops the <em>oldest</em> frame when it overflows, so latency
+degrades by dropping frames rather than by growing a backlog.</p>
+
+<pre>LatencyBudget.DEFAULT_BUDGET_MS = 150L
+ScrcpyBridge(latencyBudgetMs = LatencyBudget.DEFAULT_BUDGET_MS, ...)
+  -> nativeCreate(width, height, fps, bitrateKbps, latencyBudgetMs, queueCapacity)</pre>
+
+<p><code>AdaptiveQuality</code> lowers resolution and bitrate when the measured
+end-to-end time crosses the budget, and restores it when the headroom returns.</p>
+
+<h2>Async by construction</h2>
+<ul>
+  <li>Capture runs on its own native thread; frames reach Kotlin through a
+      registered sink, never a blocking call.</li>
+  <li>The agent loop runs on a dedicated <code>freehands-agent</code> thread; the
+      service publishes progress through <code>AgentRuntime</code>, a
+      <code>StateFlow</code>, so the Compose layer observes instead of polls.</li>
+  <li>Generation streams token by token through a callback, so the UI paints as
+      text arrives rather than after the last token.</li>
+  <li>Health checks and the feed server are separate servers on their own
+      threads; neither blocks the loop.</li>
+</ul>
+
+<h2>Correctness work found by the tests</h2>
+<div class="note">
+<p>Six defects, each caught by a test that failed first:</p>
+<ol>
+  <li><code>MemoryPool</code> aligned only the <em>offset</em>, so the first block was
+      misaligned whenever the backing array was.</li>
+  <li>A constant quantization block collapsed to zero: the scale was left at
+      <code>1.0</code> instead of derived from the block's own value.</li>
+  <li><code>KVCache</code> stored one buffer for both keys and values.</li>
+  <li>The tokenizer test literals hit the classic C++ hex-escape trap &mdash;
+      <code>"\xE2\x96\x81abc"</code> is <em>not</em> the marker followed by
+      <code>abc</code>. Fixed with a named constant, and the tokenizer now
+      guards against double-marking.</li>
+  <li><strong>Resource leak:</strong> the service never closed the native engine.
+      Stopping the stack left the model allocated for the life of the process,
+      so a restart loaded a second copy.</li>
+  <li><strong>Use-after-free:</strong> <code>close()</code> could free the engine while
+      <code>generate()</code> was inside it &mdash; the stop path and the agent thread
+      are different threads, and a raw pointer must be dereferenced before it
+      can be checked. Sessions now live in a registry keyed by the handle;
+      each call takes a shared reference under the lock, so the engine is freed
+      by whichever call is last, which is never one still running.</li>
+</ol>
+</div>
+
+<h2>Evidence</h2>
+<p>Full pipeline on the host &mdash; build a 4-bit model, load it, stream tokens,
+repeat for determinism:</p>
+<pre>$ /tmp/e2e_inference
+model: d_model=8 layers=2 heads=2 vocab=32 ctx=64 precision=q4
+backend: cpu
+  token 31 -&gt; 'd'
+  token 23 -&gt; 'v'
+  token 29 -&gt; 'b'
+generated: 'dvb' (3 chars, streamed 3)
+stats: prompt_tokens=8 generated=3 prefill=0.23ms decode=0.16ms tok/s=7610.9 kv_evictions=0
+deterministic: yes</pre>
+
+<table>
+  <tr><th>Suite</th><th>Result</th></tr>
+  <tr><td>Native capture core (gtest)</td><td class="ok">58 passed</td></tr>
+  <tr><td>Native inference engine (gtest)</td><td class="ok">77 passed</td></tr>
+  <tr><td>Kotlin unit tests</td><td class="ok">230 passed, 0 failures</td></tr>
+  <tr><td>Android APK (NDK 27, arm64 + x86_64)</td><td class="ok">builds; both <code>.so</code> packaged; 7/7 JNI symbols exported</td></tr>
+  <tr><td>Repo gates (<code>npm run lint</code>, <code>npm test</code>)</td><td class="ok">0 errors; 9111 passed</td></tr>
+</table>
+
+<h2>Compatibility</h2>
+<p>Every added Kotlin surface is additive. <code>InferenceResult</code> gained
+optional token fields defaulting to null; <code>LocalInference</code> gained a
+<code>close()</code> with a no-op default, so existing implementations compile
+unchanged. A build without the native library behaves exactly as before: the
+route is simply unavailable and the agent uses the cloud.</p>
+
+<p class="muted">Telemetry note: <code>InferenceResult</code> carries token counts as
+nullable on purpose. A route that can measure them implements
+<code>InferenceTelemetrySource</code>; one that cannot leaves them null so the
+metrics fall back to an estimate, rather than reporting an invented number as
+if it were measured.</p>
+
+</main>
+</body>
+</html>
