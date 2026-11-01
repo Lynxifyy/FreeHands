@@ -14,7 +14,9 @@
 #include <jni.h>
 
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -26,11 +28,38 @@ namespace {
 using freehands::GenerationStats;
 using freehands::LiteRTEngine;
 
-// The engine is stored behind an opaque handle. A shared_ptr in a static table
-// keyed by the handle would let a stale handle from a closed session reach a
-// freed engine, so the handle is the pointer itself and close() deletes it.
-LiteRTEngine* toEngine(jlong handle) {
-  return reinterpret_cast<LiteRTEngine*>(static_cast<intptr_t>(handle));
+// Live sessions, keyed by the handle Kotlin holds. The registry owns the
+// engine, and every entry point takes a reference out of it before doing work,
+// so a close on one thread cannot free an engine that another thread is inside.
+//
+// Keeping the registry rather than making the handle a raw pointer is what
+// makes that safe: a raw pointer would have to be dereferenced before it could
+// be checked, so a close racing a call would be a use-after-free on the handle
+// itself, not just on the engine.
+struct Session {
+  std::shared_ptr<LiteRTEngine> engine;
+};
+
+std::mutex& registryMutex() {
+  static std::mutex mutex;
+  return mutex;
+}
+
+std::map<jlong, std::shared_ptr<Session>>& registry() {
+  static std::map<jlong, std::shared_ptr<Session>> sessions;
+  return sessions;
+}
+
+// Borrows the engine for the duration of a call, or null when the handle is
+// unknown or the session has already been closed.
+std::shared_ptr<LiteRTEngine> borrow(jlong handle) {
+  std::lock_guard<std::mutex> guard(registryMutex());
+  auto& sessions = registry();
+  const auto it = sessions.find(handle);
+  if (it == sessions.end()) {
+    return nullptr;
+  }
+  return it->second->engine;
 }
 
 std::string toStdString(JNIEnv* env, jstring value) {
@@ -56,13 +85,24 @@ Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeOpen(JNIEnv* env
   if (path.empty()) {
     return 0;
   }
-  auto engine = std::make_unique<LiteRTEngine>();
+  auto engine = std::make_shared<LiteRTEngine>();
   std::string error;
   if (!engine->loadModel(path, &error)) {
     return 0;
   }
-  // Ownership passes to Kotlin; nativeClose deletes it.
-  return static_cast<jlong>(reinterpret_cast<intptr_t>(engine.release()));
+  auto session = std::make_shared<Session>();
+  session->engine = std::move(engine);
+  std::lock_guard<std::mutex> guard(registryMutex());
+  auto& sessions = registry();
+  // A fresh address cannot collide with a live key, but be explicit rather
+  // than relying on that.
+  jlong handle = static_cast<jlong>(reinterpret_cast<intptr_t>(session.get()));
+  while (sessions.count(handle) != 0) {
+    handle += 1;
+  }
+  sessions.emplace(handle, std::move(session));
+  // Ownership passes to Kotlin; nativeClose removes it.
+  return handle;
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -71,7 +111,7 @@ Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeGenerate(JNIEnv*
                                                                         jlong handle,
                                                                         jstring prompt,
                                                                         jint maxTokens) {
-  LiteRTEngine* engine = toEngine(handle);
+  const std::shared_ptr<LiteRTEngine> engine = borrow(handle);
   if (engine == nullptr) {
     return env->NewStringUTF("");
   }
@@ -86,7 +126,20 @@ extern "C" JNIEXPORT void JNICALL
 Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeClose(JNIEnv* /*env*/,
                                                                      jclass /*clazz*/,
                                                                      jlong handle) {
-  delete toEngine(handle);
+  std::shared_ptr<Session> session;
+  {
+    std::lock_guard<std::mutex> guard(registryMutex());
+    auto& sessions = registry();
+    const auto it = sessions.find(handle);
+    if (it == sessions.end()) {
+      return;
+    }
+    session = std::move(it->second);
+    sessions.erase(it);
+  }
+  // The session lives on until the last in-flight call releases its reference,
+  // so an engine is never freed while a generate is inside it.
+  session->engine.reset();
 }
 
 // Reports the last run's timings as
@@ -96,7 +149,7 @@ Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeLastStats(JNIEnv
                                                                          jobject /*thiz*/,
                                                                          jlong handle) {
   jlong values[6] = {0, 0, 0, 0, 0, 0};
-  LiteRTEngine* engine = toEngine(handle);
+  const std::shared_ptr<LiteRTEngine> engine = borrow(handle);
   if (engine != nullptr) {
     const GenerationStats stats = engine->lastStats();
     values[0] = static_cast<jlong>(stats.prompt_tokens);
@@ -118,7 +171,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeCancel(JNIEnv* /*env*/,
                                                                       jobject /*thiz*/,
                                                                       jlong handle) {
-  LiteRTEngine* engine = toEngine(handle);
+  // No lock: cancel has to reach an engine whose caller is holding it.
+  const std::shared_ptr<LiteRTEngine> engine = borrow(handle);
   if (engine != nullptr) {
     engine->cancel();
   }
@@ -131,7 +185,7 @@ Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeModelInfo(JNIEnv
                                                                          jobject /*thiz*/,
                                                                          jlong handle) {
   jlong values[4] = {0, 0, 0, 0};
-  LiteRTEngine* engine = toEngine(handle);
+  const std::shared_ptr<LiteRTEngine> engine = borrow(handle);
   if (engine != nullptr && engine->model() != nullptr) {
     values[0] = engine->model()->d_model;
     values[1] = engine->model()->n_layers;
@@ -149,6 +203,6 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_dev_openhands_agentcanvas_freehands_LiteLLMInference_nativeBackendName(JNIEnv* env,
                                                                            jobject /*thiz*/,
                                                                            jlong handle) {
-  LiteRTEngine* engine = toEngine(handle);
+  const std::shared_ptr<LiteRTEngine> engine = borrow(handle);
   return env->NewStringUTF(engine == nullptr ? "none" : engine->backendName());
 }

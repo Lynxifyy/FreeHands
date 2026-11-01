@@ -16,9 +16,12 @@ import org.json.JSONObject
  * pretending to run a model it does not have.
  */
 class LiteLLMInference private constructor(
-    private val handle: Long,
+    handle: Long,
     override val modelName: String,
 ) : LocalInference, InferenceTelemetrySource {
+
+    // Zeroed on close so a second close is a no-op rather than a double free.
+    private var handle: Long = handle
 
     override fun generate(prompt: String, maxTokens: Int): String {
         val text = nativeGenerate(handle, prompt, maxTokens)
@@ -46,9 +49,11 @@ class LiteLLMInference private constructor(
     fun cancel() = nativeCancel(handle)
 
     /** Releases the native session. Idempotent. */
-    fun close() {
-        if (handle != 0L) {
-            nativeClose(handle)
+    override fun close() {
+        val current = handle
+        if (current != 0L) {
+            handle = 0L
+            nativeClose(current)
         }
     }
 

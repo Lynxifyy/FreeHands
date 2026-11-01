@@ -25,6 +25,12 @@ interface LocalInference {
     val modelName: String
 
     fun generate(prompt: String, maxTokens: Int): String
+
+    /**
+     * Releases whatever the route holds. A cloud route holds nothing, so the
+     * default is a no-op; the native engine overrides it to free its session.
+     */
+    fun close() {}
 }
 
 /**
@@ -121,6 +127,14 @@ class LocalInferenceService(
             "every inference route failed",
             lastError,
         )
+    }
+
+    /**
+     * Releases the local route. Called when the service stops, so a native
+     * model session does not outlive the stack that loaded it.
+     */
+    fun close() {
+        local?.close()
     }
 
     /** The routes to try, in order, given connectivity and preference. */

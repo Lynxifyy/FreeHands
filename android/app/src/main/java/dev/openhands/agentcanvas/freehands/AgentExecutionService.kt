@@ -309,6 +309,7 @@ class AgentExecutionService : Service() {
         bridge?.close()
         dispatcher?.close()
         decoder?.release()
+        inference?.close()
         recorder?.record(SessionRecorder.EVENT_SERVICE_STOP)
         recorder?.close()
 

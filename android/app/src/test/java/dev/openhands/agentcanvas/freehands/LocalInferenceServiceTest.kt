@@ -101,6 +101,27 @@ class LocalInferenceServiceTest {
     }
 
     @Test
+    fun `close releases the local route`() {
+        var closed = false
+        val route = object : LocalInference {
+            override val modelName: String = "litert"
+            override fun generate(prompt: String, maxTokens: Int): String = "ok"
+            override fun close() {
+                closed = true
+            }
+        }
+
+        LocalInferenceService(route, null, offline).close()
+
+        assertTrue(closed)
+    }
+
+    @Test
+    fun `close is safe without a local route`() {
+        LocalInferenceService(null, cloud(), online).close()
+    }
+
+    @Test
     fun `reports the token counts the local engine measured`() {
         val measured = object : LocalInference, InferenceTelemetrySource {
             override val modelName: String = "litert"
