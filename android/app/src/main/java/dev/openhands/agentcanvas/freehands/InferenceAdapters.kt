@@ -18,10 +18,32 @@ import org.json.JSONObject
 class LiteLLMInference private constructor(
     private val handle: Long,
     override val modelName: String,
-) : LocalInference {
+) : LocalInference, InferenceTelemetrySource {
 
-    override fun generate(prompt: String, maxTokens: Int): String =
-        nativeGenerate(handle, prompt, maxTokens)
+    override fun generate(prompt: String, maxTokens: Int): String {
+        val text = nativeGenerate(handle, prompt, maxTokens)
+        lastStats = NativeInferenceStats.fromNative(nativeLastStats(handle))
+        return text
+    }
+
+    /** Timings from the most recent [generate] call. */
+    var lastStats: NativeInferenceStats = NativeInferenceStats.EMPTY
+        private set
+
+    /** The loaded model's dimensions, or an empty report when none is loaded. */
+    val modelInfo: NativeModelInfo get() = NativeModelInfo.fromNative(nativeModelInfo(handle))
+
+    /** The math backend actually serving generation, e.g. "cpu". */
+    val backendName: String get() = nativeBackendName(handle)
+
+    override fun lastTokenCounts(): Pair<Long, Long> =
+        lastStats.promptTokens to lastStats.generatedTokens
+
+    /**
+     * Asks the current [generate] to stop. Safe from another thread, which is
+     * what the UI's stop button uses.
+     */
+    fun cancel() = nativeCancel(handle)
 
     /** Releases the native session. Idempotent. */
     fun close() {
@@ -33,6 +55,14 @@ class LiteLLMInference private constructor(
     private external fun nativeGenerate(handle: Long, prompt: String, maxTokens: Int): String
 
     private external fun nativeClose(handle: Long)
+
+    private external fun nativeLastStats(handle: Long): LongArray
+
+    private external fun nativeCancel(handle: Long)
+
+    private external fun nativeModelInfo(handle: Long): LongArray
+
+    private external fun nativeBackendName(handle: Long): String
 
     companion object {
         private const val LIBRARY_NAME = "litertlm"
@@ -157,6 +187,68 @@ class OpenHandsCloudInference private constructor(
         fun fromConfig(baseUrl: String, apiKey: String, model: String): OpenHandsCloudInference? {
             if (baseUrl.isBlank() || apiKey.isBlank() || model.isBlank()) return null
             return OpenHandsCloudInference(baseUrl.trimEnd('/'), apiKey, model)
+        }
+    }
+}
+
+
+/**
+ * Timings reported by the native engine for one generation.
+ *
+ * Decoding is tolerant on purpose: an older library that returns a shorter
+ * array, or a handle that is no longer valid, yields zeroes rather than
+ * throwing. A missing timing must not take down the agent loop.
+ */
+data class NativeInferenceStats(
+    val promptTokens: Long,
+    val generatedTokens: Long,
+    val prefillMs: Long,
+    val decodeMs: Long,
+    val tokensPerSecond: Long,
+    val kvEvictions: Long,
+) {
+    companion object {
+        val EMPTY = NativeInferenceStats(0, 0, 0, 0, 0, 0)
+
+        /** Field order matches the array the JNI bridge returns. */
+        fun fromNative(values: LongArray?): NativeInferenceStats {
+            if (values == null) return EMPTY
+            fun at(index: Int): Long = if (index < values.size) values[index] else 0L
+            return NativeInferenceStats(
+                promptTokens = at(0),
+                generatedTokens = at(1),
+                prefillMs = at(2),
+                decodeMs = at(3),
+                tokensPerSecond = at(4),
+                kvEvictions = at(5),
+            )
+        }
+    }
+}
+
+/** Dimensions of the model the native engine currently holds. */
+data class NativeModelInfo(
+    val dModel: Int,
+    val layers: Int,
+    val vocabSize: Int,
+    val maxContext: Int,
+) {
+    /** True when a model is actually loaded. */
+    val isLoaded: Boolean get() = dModel > 0 && layers > 0
+
+    companion object {
+        val EMPTY = NativeModelInfo(0, 0, 0, 0)
+
+        /** Field order matches the array the JNI bridge returns. */
+        fun fromNative(values: LongArray?): NativeModelInfo {
+            if (values == null) return EMPTY
+            fun at(index: Int): Int = if (index < values.size) values[index].toInt() else 0
+            return NativeModelInfo(
+                dModel = at(0),
+                layers = at(1),
+                vocabSize = at(2),
+                maxContext = at(3),
+            )
         }
     }
 }

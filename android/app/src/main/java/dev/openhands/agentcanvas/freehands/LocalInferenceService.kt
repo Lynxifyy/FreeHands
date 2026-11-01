@@ -9,6 +9,11 @@ data class InferenceResult(
     val route: InferenceRoute,
     val latencyMs: Long,
     val model: String,
+    // Token counts are null when the route cannot measure them. The cloud
+    // endpoint does not report usage here, and inventing a number would make
+    // the metrics look precise while being wrong.
+    val promptTokens: Long? = null,
+    val completionTokens: Long? = null,
 )
 
 /** Thrown when no route can serve a request. */
@@ -20,6 +25,18 @@ interface LocalInference {
     val modelName: String
 
     fun generate(prompt: String, maxTokens: Int): String
+}
+
+/**
+ * An inference route that can report how many tokens the last request used.
+ *
+ * The native engine knows the real counts, so it reports them; a route that
+ * only has a string answer (a cloud endpoint that returns no usage) simply does
+ * not implement this, and the metrics fall back to an estimate.
+ */
+interface InferenceTelemetrySource {
+    /** Prompt and completion tokens for the most recent request. */
+    fun lastTokenCounts(): Pair<Long, Long>
 }
 
 /** Runs a prompt on a remote model. */
@@ -83,7 +100,18 @@ class LocalInferenceService(
                     InferenceRoute.LOCAL -> local!!.modelName
                     InferenceRoute.CLOUD -> cloud!!.modelName
                 }
-                return InferenceResult(text, route, clock() - start, model)
+                val tokens = (when (route) {
+                    InferenceRoute.LOCAL -> local
+                    InferenceRoute.CLOUD -> cloud
+                } as? InferenceTelemetrySource)?.lastTokenCounts()
+                return InferenceResult(
+                    text = text,
+                    route = route,
+                    latencyMs = clock() - start,
+                    model = model,
+                    promptTokens = tokens?.first,
+                    completionTokens = tokens?.second,
+                )
             } catch (error: Exception) {
                 lastError = error
             }

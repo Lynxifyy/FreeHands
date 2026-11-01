@@ -40,12 +40,13 @@ class InferenceAgentPlanner(
             recorder?.record("planner_unavailable", JSONObject().put("message", error.message.orEmpty()))
             return AgentDecision(thought = "no inference route available", action = null, done = true)
         }
-        // The provider does not always report usage, so the prompt and reply are
-        // estimated. This keeps the metrics meaningful for a local model that
-        // reports nothing.
+        // Prefer the counts the engine actually measured; fall back to an
+        // estimate only for a route that reports no usage, so the metrics stay
+        // meaningful either way.
         telemetry = PlannerTelemetry(
-            promptTokens = AgentMetrics.estimateTokens(prompt),
-            completionTokens = AgentMetrics.estimateTokens(result.text),
+            promptTokens = result.promptTokens?.toInt() ?: AgentMetrics.estimateTokens(prompt),
+            completionTokens = result.completionTokens?.toInt()
+                ?: AgentMetrics.estimateTokens(result.text),
             latencyMs = result.latencyMs,
             route = result.route,
         )

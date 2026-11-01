@@ -99,4 +99,38 @@ class LocalInferenceServiceTest {
 
         assertEquals(listOf(InferenceRoute.LOCAL, InferenceRoute.CLOUD), service.routeOrder())
     }
+
+    @Test
+    fun `reports the token counts the local engine measured`() {
+        val measured = object : LocalInference, InferenceTelemetrySource {
+            override val modelName: String = "litert"
+            override fun generate(prompt: String, maxTokens: Int): String = "ok"
+            override fun lastTokenCounts(): Pair<Long, Long> = 42L to 7L
+        }
+
+        val result = LocalInferenceService(measured, null, offline).generate("hello")
+
+        assertEquals(42L, result.promptTokens)
+        assertEquals(7L, result.completionTokens)
+    }
+
+    @Test
+    fun `leaves the token counts unset when the route cannot measure them`() {
+        val service = LocalInferenceService(local(), cloud(), online)
+
+        val result = service.generate("hello")
+
+        assertEquals(null, result.promptTokens)
+        assertEquals(null, result.completionTokens)
+    }
+
+    @Test
+    fun `reports the cloud route when the local engine cannot serve the request`() {
+        val service = LocalInferenceService(local(fail = true), cloud(), online)
+
+        val result = service.generate("hello")
+
+        assertEquals(InferenceRoute.CLOUD, result.route)
+        assertEquals(null, result.promptTokens)
+    }
 }

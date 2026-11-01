@@ -26,6 +26,17 @@ class InferenceAgentPlannerTest {
         nodes = emptyList(),
     )
 
+    /** A local route that reports measured token counts, like the native engine. */
+    private class MeasuringLocal(
+        private val reply: String,
+        private val promptTokens: Long,
+        private val completionTokens: Long,
+        override val modelName: String = "stub-local",
+    ) : LocalInference, InferenceTelemetrySource {
+        override fun generate(prompt: String, maxTokens: Int): String = reply
+        override fun lastTokenCounts(): Pair<Long, Long> = promptTokens to completionTokens
+    }
+
     private fun planner(reply: String, recorder: SessionRecorder? = null) = InferenceAgentPlanner(
         inference = LocalInferenceService(
             local = StubLocal(reply = reply),
@@ -34,6 +45,15 @@ class InferenceAgentPlannerTest {
         ),
         recorder = recorder,
     )
+
+    private fun measuringPlanner(reply: String, promptTokens: Long, completionTokens: Long) =
+        InferenceAgentPlanner(
+            inference = LocalInferenceService(
+                local = MeasuringLocal(reply, promptTokens, completionTokens),
+                cloud = null,
+                connectivity = { false },
+            ),
+        )
 
     @Test
     fun `decodes a well formed decision`() {
@@ -141,6 +161,29 @@ class InferenceAgentPlannerTest {
         assertEquals(InferenceRoute.LOCAL, telemetry!!.route)
         assertTrue(telemetry.promptTokens > 0)
         assertTrue(telemetry.completionTokens > 0)
+    }
+
+    @Test
+    fun `uses the token counts the engine measured`() {
+        val planner = measuringPlanner("""{"thought":"x","done":true}""", 120L, 9L)
+
+        planner.decide("goal", emptyList(), observation)
+
+        val telemetry = planner.lastTelemetry()
+        assertTrue(telemetry != null)
+        assertEquals(120, telemetry!!.promptTokens)
+        assertEquals(9, telemetry.completionTokens)
+    }
+
+    @Test
+    fun `estimates the tokens when the route cannot measure them`() {
+        val planner = planner("""{"thought":"x","done":true}""")
+
+        planner.decide("goal", emptyList(), observation)
+
+        val telemetry = planner.lastTelemetry()
+        assertTrue(telemetry != null)
+        assertTrue(telemetry!!.promptTokens > 0)
     }
 
     @Test
