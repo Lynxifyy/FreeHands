@@ -6,4 +6,48 @@
     <string name="custom_url_scheme">dev.openhands.agentcanvas</string>
     <string name="connection_channel_name">Connection</string>
     <string name="connection_notification">Keeping your session connected</string>
+
+    <!-- Free Hands agent stack -->
+    <string name="freehands_title">Free Hands live feed</string>
+    <string name="freehands_notification_channel">Agent session</string>
+    <string name="freehands_notification_channel_description">Shown while the Free Hands agent is running</string>
+    <string name="freehands_notification_title">Free Hands agent</string>
+    <string name="freehands_notification_running">Streaming the device screen to the agent</string>
+    <string name="freehands_notification_stop">Stop</string>
+
+    <string name="freehands_status_service">Agent service</string>
+    <string name="freehands_status_feed">Live feed</string>
+    <string name="freehands_status_native_bridge">Capture bridge</string>
+    <string name="freehands_status_capture">Screen capture</string>
+    <string name="freehands_status_agent">Agent running</string>
+    <string name="freehands_status_accessibility">Accessibility</string>
+    <string name="freehands_status_ok">ready</string>
+    <string name="freehands_status_missing">missing</string>
+
+    <string name="freehands_latency_summary">Latency %1$d/%2$d ms &#183; quality %3$s &#183; %4$s</string>
+    <plurals name="freehands_viewer_count">
+        <item quantity="one">%d viewer</item>
+        <item quantity="other">%d viewers</item>
+    </plurals>
+    <string name="freehands_frames_summary">Frames sent %1$d &#183; dropped %2$d</string>
+
+    <string name="freehands_permission_title">Agent permissions</string>
+    <string name="freehands_permission_selected">%1$s (selected)</string>
+
+    <string name="freehands_action_start">Start agent</string>
+    <string name="freehands_action_stop">Stop agent</string>
+    <string name="freehands_action_enable_accessibility">Enable accessibility</string>
+
+    <string name="freehands_overlay_idle">Idle</string>
+    <string name="freehands_overlay_status">%1$s &#183; %2$d/%3$d ms &#183; %4$s</string>
+
+    <string name="freehands_error_bridge_unavailable">The native capture bridge could not start on this device.</string>
+    <string name="freehands_error_capture_consent">Screen capture permission is required to stream the live feed. Tap Start and allow capture.</string>
+    <string name="freehands_error_capture_denied">Screen capture was declined, so the live feed cannot start.</string>
+    <string name="freehands_error_accessibility_disabled">Enable the Free Hands accessibility service to let the agent act on the device.</string>
+    <string name="freehands_error_notifications_denied">Notifications are off, so the agent session will not stay visible.</string>
+
+    <string name="freehands_accessibility_label">Free Hands agent</string>
+    <string name="freehands_accessibility_summary">Lets the agent read the screen and tap for you</string>
+    <string name="freehands_accessibility_description">Free Hands uses this service to read the current screen and perform taps, swipes and text entry on your behalf while an agent session is running. Turn it off at any time in Settings to stop the agent acting on the device.</string>
 </resources>

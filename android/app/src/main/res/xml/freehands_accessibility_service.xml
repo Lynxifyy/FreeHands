@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Accessibility configuration for the Free Hands agent.
+
+  Only the capabilities the agent needs are requested:
+  - retrieve window content: read the UI tree so the agent can find controls
+  - perform gestures: tap, swipe and long-press on the user's behalf
+  - observe the focused text field so "type text" can target it
+
+  canRetrieveWindowContent plus a narrow event set keeps the service from
+  waking on unrelated UI churn. Flagging the service as a "tool" makes the
+  system warn the user during setup, which is appropriate for a service that
+  can control the device.
+
+  canPerformGestures only exists from API 24; on API 23 (the minimum the app
+  supports) the attribute is ignored and the service answers gesture requests
+  with an explicit "requires Android 7.0+" failure instead of crashing.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewFocused|typeViewClicked"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/freehands_accessibility_description"
+    android:notificationTimeout="100"
+    android:settingsActivity="dev.openhands.agentcanvas.MainActivity"
+    android:summary="@string/freehands_accessibility_summary"
+    tools:targetApi="24" />
