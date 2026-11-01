@@ -10,6 +10,19 @@ data class AgentStepResult(
     val verification: VerificationResult?,
 )
 
+/**
+ * What one planner call cost: tokens, latency and the route that served it.
+ *
+ * Reported separately from [AgentStepResult] because it describes the model
+ * call, not the device action, and a planner may be unable to report it at all.
+ */
+data class PlannerTelemetry(
+    val promptTokens: Int,
+    val completionTokens: Int,
+    val latencyMs: Long,
+    val route: InferenceRoute,
+)
+
 /** The agent loop: observe, decide, act, verify. */
 interface AgentLoop {
     /** Runs until the agent reports done, or [maxSteps] is reached. */
@@ -21,6 +34,12 @@ interface AgentLoop {
 /** Produces the next decision for an observation. Implemented over HTTP or a local model. */
 fun interface AgentPlanner {
     fun decide(goal: String, history: List<AgentStepResult>, observation: AgentObservation): AgentDecision
+
+    /**
+     * Telemetry for the most recent [decide] call, or null when the planner
+     * does not report any. The loop stamps the step number.
+     */
+    fun lastTelemetry(): PlannerTelemetry? = null
 }
 
 /**
@@ -42,6 +61,8 @@ class AgentBridge(
     private val observer: () -> AgentObservation,
     private val verifier: ActionVerifier? = null,
     private val recorder: SessionRecorder? = null,
+    private val metrics: AgentMetrics = AgentMetrics(),
+    private val conversation: ConversationManager = ConversationManager(),
     private val maxSteps: Int = DEFAULT_MAX_STEPS,
 ) : AgentLoop {
 
@@ -55,14 +76,19 @@ class AgentBridge(
     override fun run(goal: String, maxSteps: Int): List<AgentStepResult> {
         cancelled = false
         dispatcher.start()
-        val history = mutableListOf<AgentStepResult>()
-        val limit = maxSteps.coerceAtLeast(1)
+        // The full run is returned to the caller, but only a bounded window of
+        // it is replayed to the planner so the prompt cannot grow without limit.
+        val results = mutableListOf<AgentStepResult>()
+        // An explicit call-site limit wins; otherwise the constructor value
+        // applies, so a caller can bound a run without rebuilding the loop.
+        val limit = if (maxSteps != DEFAULT_MAX_STEPS) maxSteps else this.maxSteps
 
-        for (step in 1..limit) {
+        for (step in 1..limit.coerceAtLeast(1)) {
             if (cancelled) break
 
             val observation = observer()
-            val decision = planner.decide(goal, history, observation)
+            val decision = planner.decide(goal, conversation.history(), observation)
+            val telemetry = planner.lastTelemetry()
             recorder?.record(
                 "agent_step",
                 JSONObject()
@@ -73,7 +99,10 @@ class AgentBridge(
             )
 
             if (decision.done || decision.action == null) {
-                history += AgentStepResult(step, decision, actionResult = null, verification = null)
+                recordMetrics(step, decision, telemetry, success = telemetry != null)
+                val result = AgentStepResult(step, decision, actionResult = null, verification = null)
+                conversation.append(result)
+                results += result
                 break
             }
 
@@ -89,11 +118,50 @@ class AgentBridge(
             } else {
                 null
             }
-            history += AgentStepResult(step, decision, actionResult, verification)
+            recordMetrics(
+                step = step,
+                decision = decision,
+                telemetry = telemetry,
+                success = actionResult == ActionResult.Success,
+            )
+            val result = AgentStepResult(step, decision, actionResult, verification)
+            conversation.append(result)
+            results += result
         }
 
-        recorder?.record("agent_run_complete", JSONObject().put("steps", history.size))
-        return history
+        val snapshot = metrics.snapshot()
+        recorder?.record(
+            "agent_run_complete",
+            JSONObject()
+                .put("steps", results.size)
+                .put("metrics", snapshot.toJson()),
+        )
+        return results
+    }
+
+    /**
+     * Records what the step cost. Token and latency figures come from the
+     * planner when it reports them; a planner that reports nothing is still
+     * counted, with the thought estimated, so the rollup never silently
+     * under-reports a run.
+     */
+    private fun recordMetrics(
+        step: Int,
+        decision: AgentDecision,
+        telemetry: PlannerTelemetry?,
+        success: Boolean,
+    ) {
+        val estimated = AgentMetrics.estimateTokens(decision.thought)
+        metrics.record(
+            AgentStepMetrics(
+                step = step,
+                promptTokens = telemetry?.promptTokens ?: estimated,
+                completionTokens = telemetry?.completionTokens ?: estimated,
+                latencyMs = telemetry?.latencyMs ?: 0L,
+                success = success,
+                route = telemetry?.route ?: InferenceRoute.LOCAL,
+            ),
+        )
     }
 
     private fun dispatchAndWait(action: AgentAction): ActionResult {

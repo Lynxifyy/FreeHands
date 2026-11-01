@@ -21,6 +21,12 @@ class InferenceAgentPlanner(
     private val historyLimit: Int = DEFAULT_HISTORY_LIMIT,
 ) : AgentPlanner {
 
+    /** Telemetry for the most recent [decide] call, read by the loop. */
+    @Volatile
+    private var telemetry: PlannerTelemetry? = null
+
+    override fun lastTelemetry(): PlannerTelemetry? = telemetry
+
     override fun decide(
         goal: String,
         history: List<AgentStepResult>,
@@ -30,15 +36,27 @@ class InferenceAgentPlanner(
         val result = try {
             inference.generate(prompt)
         } catch (error: InferenceUnavailableException) {
+            telemetry = null
             recorder?.record("planner_unavailable", JSONObject().put("message", error.message.orEmpty()))
             return AgentDecision(thought = "no inference route available", action = null, done = true)
         }
+        // The provider does not always report usage, so the prompt and reply are
+        // estimated. This keeps the metrics meaningful for a local model that
+        // reports nothing.
+        telemetry = PlannerTelemetry(
+            promptTokens = AgentMetrics.estimateTokens(prompt),
+            completionTokens = AgentMetrics.estimateTokens(result.text),
+            latencyMs = result.latencyMs,
+            route = result.route,
+        )
         recorder?.record(
             "planner_response",
             JSONObject()
                 .put("route", result.route.name)
                 .put("latencyMs", result.latencyMs)
-                .put("model", result.model),
+                .put("model", result.model)
+                .put("promptTokens", telemetry!!.promptTokens)
+                .put("completionTokens", telemetry!!.completionTokens),
         )
         return try {
             AgentDecisionCodec.decodeDecision(extractJson(result.text))

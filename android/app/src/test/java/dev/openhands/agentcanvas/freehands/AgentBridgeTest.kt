@@ -151,4 +151,66 @@ class AgentBridgeTest {
         assertTrue(types.contains("agent_step"))
         assertTrue(types.contains("agent_run_complete"))
     }
+
+    @Test
+    fun `reports the planner telemetry in the run rollup`() {
+        val dir = java.nio.file.Files.createTempDirectory("freehands-bridge-metrics").toFile()
+        val recorder = SessionRecorder(dir, clock = { 1L }, sessionId = "bridge-metrics")
+        val dispatcher = ActionDispatcher(executor = ActionExecutor { ActionResult.Success })
+        val planner = object : AgentPlanner {
+            override fun decide(
+                goal: String,
+                history: List<AgentStepResult>,
+                observation: AgentObservation,
+            ): AgentDecision = AgentDecision("tap", AgentAction.Tap(1, 1))
+
+            override fun lastTelemetry(): PlannerTelemetry =
+                PlannerTelemetry(promptTokens = 40, completionTokens = 8, latencyMs = 25, route = InferenceRoute.CLOUD)
+        }
+        val bridge = AgentBridge(planner, dispatcher, observer = ::observation, recorder = recorder)
+
+        bridge.run("go", maxSteps = 1)
+
+        val completion = recorder.readAll().last { it.type == "agent_run_complete" }
+        val metrics = completion.detail.getJSONObject("metrics")
+        assertEquals(1, metrics.getInt("steps"))
+        assertEquals(48, metrics.getInt("totalTokens"))
+        assertEquals(25L, metrics.getLong("totalLatencyMs"))
+        assertEquals(1, metrics.getJSONObject("perRoute").getInt("CLOUD"))
+    }
+
+    @Test
+    fun `honours the constructor step limit when the call site uses the default`() {
+        val dispatcher = ActionDispatcher(executor = ActionExecutor { ActionResult.Success })
+        val bridge = AgentBridge(
+            planner = { _, _, _ -> AgentDecision("keep going", AgentAction.Tap(1, 1)) },
+            dispatcher = dispatcher,
+            observer = ::observation,
+            maxSteps = 3,
+        )
+
+        val history = bridge.run("bounded")
+
+        assertEquals(3, history.size)
+    }
+
+    @Test
+    fun `bounds the history handed to the planner but returns every step`() {
+        val seen = mutableListOf<Int>()
+        val dispatcher = ActionDispatcher(executor = ActionExecutor { ActionResult.Success })
+        val bridge = AgentBridge(
+            planner = { _, history, _ ->
+                seen += history.size
+                AgentDecision("keep going", AgentAction.Tap(1, 1))
+            },
+            dispatcher = dispatcher,
+            observer = ::observation,
+            conversation = ConversationManager(maxTokens = 100_000, maxSteps = 2),
+        )
+
+        val results = bridge.run("long run", maxSteps = 6)
+
+        assertEquals(6, results.size)
+        assertEquals(listOf(0, 1, 2, 2, 2, 2), seen)
+    }
 }

@@ -129,4 +129,27 @@ class InferenceAgentPlannerTest {
             planner.extractJson("prefix {\"text\":\"a}b\"} suffix"),
         )
     }
+
+    @Test
+    fun `reports the telemetry of the model call`() {
+        val planner = planner("""{"thought":"x","done":true}""")
+
+        planner.decide("goal", emptyList(), observation)
+
+        val telemetry = planner.lastTelemetry()
+        assertTrue(telemetry != null)
+        assertEquals(InferenceRoute.LOCAL, telemetry!!.route)
+        assertTrue(telemetry.promptTokens > 0)
+        assertTrue(telemetry.completionTokens > 0)
+    }
+
+    @Test
+    fun `reports no telemetry when no route could serve the request`() {
+        val service = LocalInferenceService(local = null, cloud = null, connectivity = { false })
+        val planner = InferenceAgentPlanner(service)
+
+        planner.decide("goal", emptyList(), observation)
+
+        assertEquals(null, planner.lastTelemetry())
+    }
 }
