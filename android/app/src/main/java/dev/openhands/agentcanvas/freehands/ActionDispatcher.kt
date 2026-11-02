@@ -1,7 +1,7 @@
 package dev.openhands.agentcanvas.freehands
 
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 
@@ -42,7 +42,7 @@ class ActionDispatcher(
     private val queue = LinkedBlockingQueue<QueuedAction>(capacity.coerceAtLeast(1))
     private val lock = ReentrantLock()
     private val idle = lock.newCondition()
-    private val inFlight = AtomicBoolean(false)
+    private val outstanding = AtomicInteger(0)
     private val submittedCount = AtomicLong()
     private val processedCount = AtomicLong()
     private val deniedCount = AtomicLong()
@@ -70,8 +70,10 @@ class ActionDispatcher(
     val isRunning: Boolean get() = running
 
     /** Starts the worker thread. Idempotent. */
+    @Synchronized
     fun start() {
         if (running) return
+        check(worker?.isAlive != true) { "Previous device action is still shutting down" }
         running = true
         worker = Thread({ drainLoop() }, "freehands-actions").apply {
             isDaemon = true
@@ -83,6 +85,7 @@ class ActionDispatcher(
      * Enqueues [action] for execution. Returns false when the queue is full or
      * the dispatcher is not running; the caller may retry.
      */
+    @Synchronized
     fun submit(action: AgentAction, listener: ActionResultListener? = null): Boolean {
         if (!running) return false
         val queued = QueuedAction(action, listener)
@@ -90,6 +93,7 @@ class ActionDispatcher(
             droppedCount.incrementAndGet()
             return false
         }
+        outstanding.incrementAndGet()
         submittedCount.incrementAndGet()
         return true
     }
@@ -99,7 +103,7 @@ class ActionDispatcher(
         lock.lock()
         try {
             val deadline = System.nanoTime() + timeoutMs * 1_000_000
-            while (queue.isNotEmpty() || inFlight.get()) {
+            while (outstanding.get() > 0) {
                 val remaining = deadline - System.nanoTime()
                 if (remaining <= 0) return false
                 idle.awaitNanos(remaining)
@@ -111,12 +115,19 @@ class ActionDispatcher(
     }
 
     /** Stops the worker, discarding queued actions. Idempotent. */
+    @Synchronized
     override fun close() {
         running = false
-        queue.clear()
+        val discarded = mutableListOf<QueuedAction>()
+        queue.drainTo(discarded)
+        outstanding.addAndGet(-discarded.size)
         worker?.interrupt()
-        worker = null
         signalIdle()
+        for (queued in discarded) {
+            try {
+                queued.listener?.onResult(queued.action, ActionResult.Failed("Action cancelled: dispatcher closed"))
+            } catch (_: Exception) { /* Observer failure must not block shutdown. */ }
+        }
     }
 
     private fun drainLoop() {
@@ -127,11 +138,10 @@ class ActionDispatcher(
                 Thread.currentThread().interrupt()
                 return
             }
-            inFlight.set(true)
             try {
                 dispatch(queued)
             } finally {
-                inFlight.set(false)
+                outstanding.decrementAndGet()
                 signalIdle()
             }
         }
@@ -146,11 +156,25 @@ class ActionDispatcher(
             is ActionResult.Failed -> failedCount.incrementAndGet()
             ActionResult.Success -> Unit
         }
-        recorder?.recordAction(action, result)
-        queued.listener?.onResult(action, result)
+        try {
+            recorder?.recordAction(action, result)
+        } catch (_: Exception) {
+            // Audit storage must not prevent the agent from learning the outcome.
+        }
+        try {
+            queued.listener?.onResult(action, result)
+        } catch (_: Exception) {
+            // A cancelled observer must not kill the serial action worker.
+        }
     }
 
-    private fun evaluate(action: AgentAction): ActionResult {
+    private fun evaluate(action: AgentAction): ActionResult = try {
+        evaluatePermitted(action)
+    } catch (error: Exception) {
+        ActionResult.Failed(error.message ?: "Device action failed: ${error.javaClass.simpleName}")
+    }
+
+    private fun evaluatePermitted(action: AgentAction): ActionResult {
         rateLimiter?.let { limiter ->
             if (!limiter.tryAcquire()) {
                 return ActionResult.Denied("Rate limit reached; try again shortly")
@@ -162,7 +186,11 @@ class ActionDispatcher(
             is PermissionDecision.RequiresConfirmation -> {
                 val approved = confirmationHandler?.invoke(action) ?: false
                 if (approved) {
-                    executor.execute(action)
+                    // Permission may have been revoked while the user was deciding.
+                    val current = PermissionMatrix.decide(permissionProvider(), action)
+                    if (current is PermissionDecision.Allowed || current is PermissionDecision.RequiresConfirmation) {
+                        executor.execute(action)
+                    } else ActionResult.Denied("Permission changed while awaiting confirmation")
                 } else {
                     ActionResult.Denied("Confirmation declined for ${action.description}")
                 }

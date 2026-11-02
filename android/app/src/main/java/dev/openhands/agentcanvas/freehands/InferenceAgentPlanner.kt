@@ -15,6 +15,9 @@ import org.json.JSONObject
  * error recorded, and the loop's step budget bounds the damage. The prompt asks
  * for JSON first, but the parser is what enforces it.
  */
+/** A planner failure is not a successfully completed user goal. */
+class AgentPlannerException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
 class InferenceAgentPlanner(
     private val inference: LocalInferenceService,
     private val recorder: SessionRecorder? = null,
@@ -38,7 +41,7 @@ class InferenceAgentPlanner(
         } catch (error: InferenceUnavailableException) {
             telemetry = null
             recorder?.record("planner_unavailable", JSONObject().put("message", error.message.orEmpty()))
-            return AgentDecision(thought = "no inference route available", action = null, done = true)
+            throw AgentPlannerException("No inference model is available. Add a model or configure a cloud connection, then retry.", error)
         }
         // Prefer the counts the engine actually measured; fall back to an
         // estimate only for a route that reports no usage, so the metrics stay

@@ -70,7 +70,7 @@ export async function buildWorkspaceUploadPath(
  */
 export async function resolveConversationUploadWorkingDir(
   conversationId: string,
-  currentConversation?: AppConversation | null,
+  currentConversation?: Pick<AppConversation, "id" | "workspace"> | null,
 ): Promise<string> {
   if (
     currentConversation?.id === conversationId &&

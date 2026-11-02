@@ -64,6 +64,9 @@ class AgentBridge(
     private val metrics: AgentMetrics = AgentMetrics(),
     private val conversation: ConversationManager = ConversationManager(),
     private val maxSteps: Int = DEFAULT_MAX_STEPS,
+    // The foreground service owns a dispatcher shared with manual/health
+    // consumers. A goal must not close it when that goal fails.
+    private val ownsDispatcher: Boolean = true,
 ) : AgentLoop {
 
     @Volatile
@@ -75,7 +78,7 @@ class AgentBridge(
 
     override fun run(goal: String, maxSteps: Int): List<AgentStepResult> {
         cancelled = false
-        dispatcher.start()
+        if (ownsDispatcher) dispatcher.start()
         // The full run is returned to the caller, but only a bounded window of
         // it is replayed to the planner so the prompt cannot grow without limit.
         val results = mutableListOf<AgentStepResult>()
@@ -83,6 +86,7 @@ class AgentBridge(
         // applies, so a caller can bound a run without rebuilding the loop.
         val limit = if (maxSteps != DEFAULT_MAX_STEPS) maxSteps else this.maxSteps
 
+        var consecutiveNoOps = 0
         for (step in 1..limit.coerceAtLeast(1)) {
             if (cancelled) break
 
@@ -99,14 +103,24 @@ class AgentBridge(
             )
 
             if (decision.done || decision.action == null) {
-                recordMetrics(step, decision, telemetry, success = telemetry != null)
+                if (!decision.done) consecutiveNoOps += 1
+                if (!decision.done && consecutiveNoOps >= MAX_CONSECUTIVE_NO_OPS) {
+                    recordMetrics(step, decision, telemetry, success = false)
+                    val result = AgentStepResult(step, decision.copy(thought = "Stopped after repeated decisions without an action: ${decision.thought}"), null, null)
+                    conversation.append(result)
+                    results += result
+                    break
+                }
+                recordMetrics(step, decision, telemetry, success = decision.done || telemetry != null)
                 val result = AgentStepResult(step, decision, actionResult = null, verification = null)
                 conversation.append(result)
                 results += result
+                if (!decision.done) continue
                 break
             }
 
             if (cancelled) break
+            consecutiveNoOps = 0
 
             // The baseline must be captured before the action runs, otherwise
             // the "before" frame already contains the change and verification
@@ -114,7 +128,7 @@ class AgentBridge(
             val baseline = verifier?.captureBaseline()
             val actionResult = dispatchAndWait(decision.action)
             val verification = if (actionResult == ActionResult.Success && baseline != null) {
-                verifier!!.awaitChange(baseline)
+                verifier.awaitChange(baseline)
             } else {
                 null
             }
@@ -127,6 +141,12 @@ class AgentBridge(
             val result = AgentStepResult(step, decision, actionResult, verification)
             conversation.append(result)
             results += result
+            // Do not keep tapping after a denial, missing accessibility service,
+            // or timed-out action. The caller can correct the problem and retry.
+            if (actionResult !is ActionResult.Success) {
+                if (ownsDispatcher) dispatcher.close()
+                break
+            }
         }
 
         val snapshot = metrics.snapshot()
@@ -171,11 +191,16 @@ class AgentBridge(
         if (!accepted) {
             return ActionResult.Failed("action queue rejected ${action.description}")
         }
-        dispatcher.awaitIdle()
+        if (!dispatcher.awaitIdle(ACTION_TIMEOUT_MS)) {
+            if (ownsDispatcher) dispatcher.close()
+            return ActionResult.Failed("Action timed out: ${action.description}")
+        }
         return result ?: ActionResult.Failed("action did not complete: ${action.description}")
     }
 
     companion object {
         const val DEFAULT_MAX_STEPS = 25
+        const val ACTION_TIMEOUT_MS = 15_000L
+        const val MAX_CONSECUTIVE_NO_OPS = 3
     }
 }

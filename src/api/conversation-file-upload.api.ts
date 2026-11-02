@@ -24,7 +24,10 @@ export interface ConversationRuntimeContext {
  */
 export async function resolveConversationRuntime(
   conversationId: string,
-  currentConversation?: AppConversation | null,
+  currentConversation?: Pick<
+    AppConversation,
+    "id" | "conversation_url" | "session_api_key"
+  > | null,
 ): Promise<ConversationRuntimeContext> {
   if (
     currentConversation?.id === conversationId &&

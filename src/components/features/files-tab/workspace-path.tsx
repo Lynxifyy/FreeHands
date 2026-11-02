@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { CopyToClipboardButton } from "#/components/shared/buttons/copy-to-clipboard-button";
+import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { I18nKey } from "#/i18n/declaration";
 
 interface WorkspacePathProps {
@@ -23,8 +24,12 @@ export function WorkspacePath({ path }: WorkspacePathProps) {
   if (!workspacePath) return null;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(workspacePath);
-    setIsCopied(true);
+    try {
+      await navigator.clipboard.writeText(workspacePath);
+      setIsCopied(true);
+    } catch {
+      displayErrorToast(t(I18nKey.CHAT_INTERFACE$CHAT_MESSAGE_COPY_FAILED));
+    }
   };
 
   return (

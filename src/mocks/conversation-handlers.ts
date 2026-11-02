@@ -96,7 +96,9 @@ const conversations: MockConversation[] = [
     created_at: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString(),
     execution_status: "idle",
-    workspace: { working_dir: "/workspace/project" },
+    workspace: {
+      working_dir: `/workspace/project/${PAGINATION_LOCAL_CONVERSATION_ID}`,
+    },
   },
   {
     id: TABLE_DEMO_CONVERSATION_ID,
@@ -104,7 +106,9 @@ const conversations: MockConversation[] = [
     created_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
     execution_status: "idle",
-    workspace: { working_dir: "/workspace/project" },
+    workspace: {
+      working_dir: `/workspace/project/${TABLE_DEMO_CONVERSATION_ID}`,
+    },
   },
   {
     id: CANVAS_DEMO_CONVERSATION_ID,
@@ -112,12 +116,26 @@ const conversations: MockConversation[] = [
     created_at: new Date(now - 12 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date(now - 12 * 60 * 60 * 1000).toISOString(),
     execution_status: "idle",
-    workspace: { working_dir: "/workspace/project" },
+    workspace: {
+      working_dir: `/workspace/project/${CANVAS_DEMO_CONVERSATION_ID}`,
+    },
   },
 ];
 
 const CONVERSATIONS = new Map<string, MockConversation>(
-  conversations.map((conversation) => [conversation.id, conversation]),
+  conversations.map((conversation) => [
+    conversation.id,
+    {
+      ...conversation,
+      // Missing/error sandboxes deliberately have no workspace. Only active
+      // fixtures get a default, isolated workspace.
+      workspace:
+        conversation.workspace ??
+        (conversation.sandbox_status
+          ? undefined
+          : { working_dir: `/workspace/project/${conversation.id}` }),
+    },
+  ]),
 );
 
 const paginationEventsByConversation = new Map<string, OpenHandsEvent[]>([
@@ -209,7 +227,9 @@ function createCloudPaginationConversation(): AppConversation {
     conversation_url: null,
     session_api_key: null,
     sandbox_id: null,
-    workspace: { working_dir: "/workspace/project" },
+    workspace: {
+      working_dir: `/workspace/project/${PAGINATION_CLOUD_CONVERSATION_ID}`,
+    },
     public: false,
     sub_conversation_ids: [],
   };

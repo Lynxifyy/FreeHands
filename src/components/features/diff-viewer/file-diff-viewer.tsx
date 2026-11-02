@@ -1,4 +1,5 @@
 import { DiffEditor, Editor, Monaco } from "@monaco-editor/react";
+import { useMonaco } from "#/utils/monaco-loader";
 import React from "react";
 import { editor as editor_t } from "monaco-editor";
 import { useTranslation } from "react-i18next";
@@ -168,6 +169,7 @@ export function FileDiffViewer({
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : uncontrolledExpanded;
   const isCollapsed = !isExpanded;
+  const { monaco: monacoApi, error: editorLoadError } = useMonaco(!isCollapsed);
   const handleToggle = () => {
     if (isControlled) {
       onToggle?.();
@@ -416,8 +418,12 @@ export function FileDiffViewer({
           >
             {t(I18nKey.DIFF_VIEWER$FILE_DELETED)}
           </div>
+        ) : editorLoadError ? (
+          <div role="alert" className="p-3 text-sm text-danger">
+            {editorLoadError}
+          </div>
         ) : (
-          isSuccess && renderContent()
+          monacoApi && isSuccess && renderContent()
         )}
       </AccordionPanel>
     </div>

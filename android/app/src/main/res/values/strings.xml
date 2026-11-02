@@ -50,4 +50,10 @@
     <string name="freehands_accessibility_label">Free Hands agent</string>
     <string name="freehands_accessibility_summary">Lets the agent read the screen and tap for you</string>
     <string name="freehands_accessibility_description">Free Hands uses this service to read the current screen and perform taps, swipes and text entry on your behalf while an agent session is running. Turn it off at any time in Settings to stop the agent acting on the device.</string>
+    <string name="freehands_goal_label">What should the agent do?</string>
+    <string name="freehands_action_run_goal">Run goal</string>
+    <string name="freehands_action_cancel_goal">Cancel goal</string>
+    <string name="freehands_current_goal">Current goal: %1$s</string>
+    <string name="freehands_error_goal">Enter a goal between 1 and 4000 characters.</string>
+    <string name="freehands_error_agent_dependencies">The agent is not ready. Start the service and check the live feed and model status.</string>
 </resources>

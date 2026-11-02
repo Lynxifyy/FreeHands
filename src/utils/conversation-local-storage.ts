@@ -101,7 +101,11 @@ const REMOVED_CONVERSATION_TABS: ReadonlySet<string> = new Set([
   "vscode",
 ]);
 
-const VALID_VIEW_MODES: ReadonlySet<ViewMode> = new Set(["rich", "plain"]);
+const VALID_VIEW_MODES: ReadonlySet<ViewMode> = new Set([
+  "rich",
+  "plain",
+  "edit",
+]);
 
 function sanitizeStoredState(
   stored: Record<string, unknown>,
@@ -434,4 +438,20 @@ export function useConversationLocalStorageState(conversationId: string): {
         filesTabSelectedPath: selectedPath,
       }),
   };
+}
+
+/** Append code context without replacing an existing chat draft. */
+export function appendConversationCodeContext(
+  conversationId: string,
+  context: string,
+): void {
+  const existing = getConversationState(conversationId).draftMessage?.trim();
+  setConversationState(conversationId, {
+    draftMessage: existing ? `${existing}\n\n${context}` : context,
+  });
+  window.dispatchEvent(
+    new CustomEvent("conversation-code-context", {
+      detail: { conversationId },
+    }),
+  );
 }

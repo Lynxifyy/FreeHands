@@ -204,7 +204,7 @@ class ActionDispatcherTest {
 
         assertTrue(latch.await(2, TimeUnit.SECONDS))
         assertEquals(AgentAction.Tap(3, 4), observed!!.first)
-        assertEquals(ActionResult.Success, observed!!.second)
+        assertEquals(ActionResult.Success, observed.second)
         dispatcher.close()
     }
 
@@ -243,5 +243,58 @@ class ActionDispatcherTest {
 
         gate.countDown()
         assertFalse(dispatcher.isRunning)
+    }
+
+    @Test
+    fun `executor exceptions become failures and the worker accepts more work`() {
+        var first = true
+        val dispatcher = ActionDispatcher(executor = {
+            if (first) { first = false; throw IllegalStateException("service disconnected") }
+            ActionResult.Success
+        })
+        dispatcher.start()
+        var result: ActionResult? = null
+        dispatcher.submit(AgentAction.Back) { _, value -> result = value }
+        assertTrue(dispatcher.awaitIdle(2000))
+        assertEquals(ActionResult.Failed("service disconnected"), result)
+        assertTrue(dispatcher.submit(AgentAction.Home))
+        assertTrue(dispatcher.awaitIdle(2000))
+        assertEquals(2L, dispatcher.processed)
+        dispatcher.close()
+    }
+
+    @Test
+    fun `permission downgrade during confirmation blocks execution`() {
+        var tier = PermissionTier.ASSISTED
+        val dispatcher = ActionDispatcher(executor(), permissionProvider = { tier }, confirmationHandler = {
+            tier = PermissionTier.READ_ONLY
+            true
+        })
+        dispatcher.start()
+        dispatcher.submit(AgentAction.Home)
+        assertTrue(dispatcher.awaitIdle(2000))
+        assertTrue(executed.isEmpty())
+        assertEquals(1L, dispatcher.denied)
+        dispatcher.close()
+    }
+
+    @Test
+    fun `confirmation exceptions become failures without killing the worker`() {
+        var confirm = true
+        val dispatcher = ActionDispatcher(executor(), permissionProvider = {
+            if (confirm) PermissionTier.ASSISTED else PermissionTier.FULL_AUTO
+        }, confirmationHandler = {
+            confirm = false
+            throw IllegalStateException("confirmation dialog unavailable")
+        })
+        dispatcher.start()
+        var result: ActionResult? = null
+        dispatcher.submit(AgentAction.Home) { _, value -> result = value }
+        assertTrue(dispatcher.awaitIdle(2000))
+        assertEquals(ActionResult.Failed("confirmation dialog unavailable"), result)
+        assertTrue(dispatcher.submit(AgentAction.Back))
+        assertTrue(dispatcher.awaitIdle(2000))
+        assertEquals(2L, dispatcher.processed)
+        dispatcher.close()
     }
 }

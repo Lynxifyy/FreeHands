@@ -83,12 +83,15 @@ class InferenceAgentPlannerTest {
     }
 
     @Test
-    fun `no inference route ends the loop instead of crashing`() {
+    fun `no inference route reports a failure instead of claiming success`() {
         val service = LocalInferenceService(local = null, cloud = null, connectivity = { false })
 
-        val decision = InferenceAgentPlanner(service).decide("goal", emptyList(), observation)
-
-        assertTrue(decision.done)
+        try {
+            InferenceAgentPlanner(service).decide("goal", emptyList(), observation)
+            org.junit.Assert.fail("Expected an unavailable planner failure")
+        } catch (error: AgentPlannerException) {
+            assertTrue(error.message!!.contains("No inference model"))
+        }
     }
 
     @Test
@@ -191,8 +194,11 @@ class InferenceAgentPlannerTest {
         val service = LocalInferenceService(local = null, cloud = null, connectivity = { false })
         val planner = InferenceAgentPlanner(service)
 
-        planner.decide("goal", emptyList(), observation)
-
-        assertEquals(null, planner.lastTelemetry())
+        try {
+            planner.decide("goal", emptyList(), observation)
+            org.junit.Assert.fail("Expected an unavailable planner failure")
+        } catch (_: AgentPlannerException) {
+            assertEquals(null, planner.lastTelemetry())
+        }
     }
 }

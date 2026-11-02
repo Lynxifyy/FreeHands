@@ -70,12 +70,15 @@ class AgentExecutionService : Service() {
             }
 
             ACTION_RUN_GOAL -> {
-                startAgent()
-                val goal = intent.getStringExtra(EXTRA_GOAL)
-                if (!goal.isNullOrBlank()) {
+                val goal = intent.getStringExtra(EXTRA_GOAL)?.trim()
+                if (goal.isNullOrBlank() || goal.length > MAX_GOAL_LENGTH) {
+                    AgentRuntime.update { it.copy(lastError = getString(R.string.freehands_error_goal)) }
+                } else {
+                    startAgent()
                     runAgent(goal)
                 }
             }
+            ACTION_CANCEL_GOAL -> agentLoop?.cancel()
 
             else -> startAgent()
         }
@@ -234,9 +237,9 @@ class AgentExecutionService : Service() {
     private fun buildInference(): LocalInferenceService = LocalInferenceService(
         local = LiteLLMInference.open(this),
         cloud = OpenHandsCloudInference.fromConfig(
-            baseUrl = BuildConfig.FREEFHANDS_CLOUD_BASE_URL,
-            apiKey = BuildConfig.FREEFHANDS_CLOUD_API_KEY,
-            model = BuildConfig.FREEFHANDS_CLOUD_MODEL,
+            baseUrl = BuildConfig.FREEHANDS_CLOUD_BASE_URL,
+            apiKey = BuildConfig.FREEHANDS_CLOUD_API_KEY,
+            model = BuildConfig.FREEHANDS_CLOUD_MODEL,
         ),
         connectivity = ConnectivityProbe { isOnline() },
     )
@@ -247,17 +250,25 @@ class AgentExecutionService : Service() {
      * same device.
      */
     private fun runAgent(goal: String) {
-        val inferenceService = inference ?: return
-        val actionDispatcher = dispatcher ?: return
-        val provider = observationProvider ?: return
+        val inferenceService = inference
+        val actionDispatcher = dispatcher
+        val provider = observationProvider
         val frameSource = latestFrame
-        if (!agentRunning.compareAndSet(false, true)) {
+        if (inferenceService == null || actionDispatcher == null || provider == null || frameSource == null) {
+            AgentRuntime.update { it.copy(lastError = getString(R.string.freehands_error_agent_dependencies)) }
             return
         }
+        if (FreeHandsAccessibilityService.current() == null) {
+            AgentRuntime.update { it.copy(lastError = getString(R.string.freehands_error_accessibility_disabled)) }
+            return
+        }
+        if (!agentRunning.compareAndSet(false, true)) return
+        AgentRuntime.update { it.copy(currentPlan = goal, lastError = "") }
 
         val loop = AgentBridge(
             planner = InferenceAgentPlanner(inferenceService, recorder),
             dispatcher = actionDispatcher,
+            ownsDispatcher = false,
             observer = {
                 provider.observe(
                     FreeHandsAccessibilityService.current()?.captureTree(),
@@ -273,12 +284,12 @@ class AgentExecutionService : Service() {
             try {
                 val results = loop.run(goal)
                 recorder?.record("agent_goal_done", JSONObject().put("steps", results.size))
-            } catch (error: Throwable) {
+            } catch (error: Exception) {
                 recorder?.record(
                     SessionRecorder.EVENT_ERROR,
                     JSONObject().put("message", error.message.orEmpty()),
                 )
-                AgentRuntime.update { it.copy(lastError = error.message.orEmpty()) }
+                AgentRuntime.update { it.copy(lastError = error.message ?: getString(R.string.freehands_error_agent_dependencies)) }
             } finally {
                 agentRunning.set(false)
                 agentLoop = null
@@ -324,7 +335,7 @@ class AgentExecutionService : Service() {
         inference = null
         FreeHandsAccessibilityService.recorder = null
 
-        AgentRuntime.update { it.copy(serviceRunning = false, feedRunning = false, connectedViewers = 0) }
+        AgentRuntime.update { it.copy(serviceRunning = false, feedRunning = false, connectedViewers = 0, agentRunning = false, currentPlan = "") }
     }
 
     /** Routes an action to the accessibility service. */
@@ -443,6 +454,8 @@ class AgentExecutionService : Service() {
     companion object {
         const val ACTION_START = "dev.openhands.agentcanvas.freehands.action.START"
         const val ACTION_STOP = "dev.openhands.agentcanvas.freehands.action.STOP"
+        const val ACTION_CANCEL_GOAL = "dev.openhands.agentcanvas.freehands.action.CANCEL_GOAL"
+        const val MAX_GOAL_LENGTH = 4000
         const val ACTION_RUN_GOAL = "dev.openhands.agentcanvas.freehands.action.RUN_GOAL"
         const val EXTRA_GOAL = "dev.openhands.agentcanvas.freehands.extra.GOAL"
         private const val CHANNEL_ID = "freehands_agent"
@@ -477,6 +490,10 @@ class AgentExecutionService : Service() {
             }
         }
 
+        fun cancelGoal(context: Context) {
+            context.startService(Intent(context, AgentExecutionService::class.java).setAction(ACTION_CANCEL_GOAL))
+        }
+
         fun stop(context: Context) {
             context.startService(
                 Intent(context, AgentExecutionService::class.java).setAction(ACTION_STOP),
@@ -485,9 +502,11 @@ class AgentExecutionService : Service() {
 
         /** Starts the agent, if needed, and routes one goal to it. */
         fun runGoal(context: Context, goal: String) {
+            val trimmed = goal.trim()
+            require(trimmed.isNotEmpty() && trimmed.length <= MAX_GOAL_LENGTH) { "Enter a goal between 1 and $MAX_GOAL_LENGTH characters" }
             val intent = Intent(context, AgentExecutionService::class.java)
                 .setAction(ACTION_RUN_GOAL)
-                .putExtra(EXTRA_GOAL, goal)
+                .putExtra(EXTRA_GOAL, trimmed)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {

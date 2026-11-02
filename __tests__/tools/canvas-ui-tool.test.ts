@@ -43,4 +43,21 @@ describe("canvas_ui client tool", () => {
       'register_tool("canvas_ui", CanvasUITool)',
     );
   });
+  // @spec CANVAS-TABS-1 — advertised tabs match the real UI, including commits and usage
+  it("advertises every supported tab and no removed VS Code tab", () => {
+    const parameters = CANVAS_UI_CLIENT_TOOL.parameters as any;
+    expect(parameters.properties.tab.enum).toEqual([
+      "files",
+      "browser",
+      "terminal",
+      "planner",
+      "tasklist",
+      "commits",
+      "usage",
+    ]);
+    expect(CANVAS_UI_CLIENT_TOOL.description).not.toContain("vscode");
+    expect(CANVAS_UI_CLIENT_TOOL.description).not.toContain(
+      "automatically renders a diff",
+    );
+  });
 });

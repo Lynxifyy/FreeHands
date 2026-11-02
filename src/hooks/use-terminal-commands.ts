@@ -75,7 +75,11 @@ export function useTerminalCommands(): TerminalCommandsController {
   const [commands, setCommands] = useState<TerminalCommand[]>(() =>
     loadCommands(conversationId),
   );
+  const [loadedId, setLoadedId] = useState(conversationId);
   const [isRunning, setIsRunning] = useState(false);
+  const activeConversationRef = useRef(conversationId);
+  activeConversationRef.current = conversationId;
+  const runGenerationRef = useRef(0);
 
   // Reload the stored transcript when the user switches conversation, rather
   // than carrying the previous conversation's commands across.
@@ -83,15 +87,23 @@ export function useTerminalCommands(): TerminalCommandsController {
   useEffect(() => {
     if (loadedFor.current === conversationId) return;
     loadedFor.current = conversationId;
+    activeConversationRef.current = conversationId;
+    runGenerationRef.current += 1;
     setCommands(loadCommands(conversationId));
+    setLoadedId(conversationId);
+    setIsRunning(false);
   }, [conversationId]);
 
   useEffect(() => {
-    saveCommands(conversationId, commands);
-  }, [conversationId, commands]);
+    if (loadedId === conversationId) saveCommands(conversationId, commands);
+  }, [conversationId, commands, loadedId]);
 
   const canRun =
-    runtimeIsReady && !!conversationId && !!workingDir && !isRunning;
+    runtimeIsReady &&
+    loadedId === conversationId &&
+    !!conversationId &&
+    !!workingDir &&
+    !isRunning;
 
   const runCommand = useBashCommandRunner(
     conversationUrl,
@@ -105,6 +117,8 @@ export function useTerminalCommands(): TerminalCommandsController {
       const command = rawCommand.trim();
       if (!command || !canRun || !workingDir) return;
 
+      const owner = conversationId;
+      const generation = runGenerationRef.current;
       setIsRunning(true);
       // Echo the command immediately so the tab acknowledges the submit; the
       // output is appended once the command finishes. The transcript is
@@ -118,6 +132,11 @@ export function useTerminalCommands(): TerminalCommandsController {
 
       runCommand(command, workingDir, USER_COMMAND_TIMEOUT_SECONDS)
         .then((result) => {
+          if (
+            activeConversationRef.current !== owner ||
+            runGenerationRef.current !== generation
+          )
+            return;
           const text = [result.stdout, result.stderr]
             .filter((part) => part)
             .join("\n");
@@ -125,21 +144,29 @@ export function useTerminalCommands(): TerminalCommandsController {
             ...previous,
             {
               content: text,
-              type: result.exit_code === 0 ? "output" : "running",
+              type: result.exit_code === 0 ? "output" : "error",
+              ...(result.exit_code !== 0 ? { exitCode: result.exit_code } : {}),
             },
           ]);
         })
         .catch((error: unknown) => {
+          if (
+            activeConversationRef.current !== owner ||
+            runGenerationRef.current !== generation
+          )
+            return;
           const message =
             error instanceof Error ? error.message : String(error);
           setCommands((previous) => [
             ...previous,
-            { content: message, type: "output" },
+            { content: message, type: "error" },
           ]);
         })
-        .finally(() => setIsRunning(false));
+        .finally(() => {
+          if (runGenerationRef.current === generation) setIsRunning(false);
+        });
     },
-    [canRun, workingDir, runCommand],
+    [canRun, workingDir, runCommand, conversationId],
   );
 
   return { commands, run, isRunning, canRun };

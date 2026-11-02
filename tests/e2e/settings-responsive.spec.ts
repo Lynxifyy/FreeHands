@@ -29,13 +29,21 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-async function openMockPage(page: Page, route: string) {
-  await page.goto(route);
+// Several responsive routes exceed the default 30-second budget on a cold
+// production bundle. The assertions still have their own explicit deadlines.
+test.setTimeout(90_000);
+
+async function openMockPage(page: Page, route: string, firstVisit = false) {
+  await page.goto(route, { waitUntil: "domcontentloaded" });
   const consent = page.getByRole("dialog", { name: "Help improve OpenHands" });
-  await expect(consent).toBeVisible({ timeout: 30000 });
-  await consent.getByRole("checkbox").uncheck();
-  await consent.getByRole("button", { name: "Confirm preferences" }).click();
-  await expect(consent).toBeHidden();
+  if (firstVisit) await expect(consent).toBeVisible();
+  else await expect(page.locator("main").last()).toBeVisible();
+  // Preferences are persisted: subsequent navigations must not prompt again.
+  if (await consent.isVisible()) {
+    await consent.getByRole("checkbox").uncheck();
+    await consent.getByRole("button", { name: "Confirm preferences" }).click();
+    await expect(consent).toBeHidden();
+  }
 }
 
 for (const width of [390, 767, 768, 820, 1023, 1024, 1440]) {
@@ -43,7 +51,7 @@ for (const width of [390, 767, 768, 820, 1023, 1024, 1440]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 1024 });
-    await openMockPage(page, "/customize");
+    await openMockPage(page, "/customize", true);
     const compact = width < 1024;
     if (compact) {
       await expect(page.getByTestId("extensions-mobile-hub")).toBeVisible();
@@ -87,6 +95,14 @@ for (const width of [390, 767, 768, 820, 1023, 1024, 1440]) {
         await openMockPage(page, route);
         const main = page.locator("main").last();
         await expect(main).toBeVisible();
+        if (route === "/settings/app") {
+          // The route shell appears before settings resolve. Measure the
+          // populated form, not its short loading skeleton.
+          await expect(page.getByTestId("app-settings-skeleton")).toBeHidden();
+          await expect(
+            page.getByTestId("enable-analytics-switch"),
+          ).toBeVisible();
+        }
         const fit = await main.evaluate((el) => ({
           bottom: el.getBoundingClientRect().bottom,
           scrolls: el.scrollHeight > el.clientHeight,

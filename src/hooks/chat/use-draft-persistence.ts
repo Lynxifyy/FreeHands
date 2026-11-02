@@ -204,6 +204,31 @@ export const useDraftPersistence = (
     setIsRestored(true);
   }, [chatInputRef, conversationId, persist]);
 
+  // Code-editor actions write through the draft owner. Update an already-mounted
+  // composer too, and cancel any pending debounce so it cannot overwrite context.
+  useEffect(() => {
+    const onContext = (event: Event) => {
+      if (
+        !persist ||
+        (event as CustomEvent).detail?.conversationId !== conversationId
+      )
+        return;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+      pendingDraftRef.current = null;
+      const element = chatInputRef.current;
+      const draft =
+        getConversationState(conversationId ?? "").draftMessage ?? "";
+      if (element) {
+        element.textContent = draft;
+        focusContentEditableAtEnd(element);
+      }
+    };
+    window.addEventListener("conversation-code-context", onContext);
+    return () =>
+      window.removeEventListener("conversation-code-context", onContext);
+  }, [conversationId, persist, chatInputRef]);
+
   // Debounced save function - called from onInput handler
   const saveDraft = useCallback(() => {
     if (!persist) {

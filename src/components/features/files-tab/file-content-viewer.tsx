@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18nKey } from "#/i18n/declaration";
@@ -14,9 +15,16 @@ import { cn } from "#/utils/utils";
 import { HighlightedSourceView } from "./highlighted-source-view";
 import type { ViewMode } from "./view-mode";
 
+const WorkspaceCodeEditor = lazy(() =>
+  import("./workspace-code-editor").then((module) => ({
+    default: module.WorkspaceCodeEditor,
+  })),
+);
+
 interface FileContentViewerProps {
   path: string;
   viewMode: ViewMode;
+  conversation?: import("#/api/conversation-service/agent-server-conversation-service.types").AppConversation;
 }
 
 const HTML_LIKE_EXTS = new Set(["html", "htm", "svg"]);
@@ -69,7 +77,11 @@ function UnpreviewableFallback({ path }: { path: string }) {
  * load naturally. In `plain` mode we always show the raw bytes as text (or
  * a fallback message for binaries).
  */
-export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
+export function FileContentViewer({
+  path,
+  viewMode,
+  conversation,
+}: FileContentViewerProps) {
   const { t } = useTranslation("openhands");
   const colorTheme = useColorTheme();
   const isLightTheme = COLOR_THEMES[colorTheme].appearance === "light";
@@ -109,6 +121,26 @@ export function FileContentViewer({ path, viewMode }: FileContentViewerProps) {
 
   const { kind, text, staticUrl, mimeType } = query.data;
   const bustedStaticUrl = withWorkspaceCacheBuster(staticUrl, mutationCounter);
+
+  if (viewMode === "edit" && kind === "text" && text !== null && conversation) {
+    return (
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted">
+            {t(I18nKey.FILES$LOADING_FILES)}
+          </div>
+        }
+      >
+        <WorkspaceCodeEditor
+          key={`${conversation.id}:${path}`}
+          path={path}
+          initialText={text}
+          remoteText={text}
+          conversation={conversation}
+        />
+      </Suspense>
+    );
+  }
 
   // ----- Plain mode: raw source bytes, syntax-highlighted when we can
   // recognize the grammar (falls through to a `<pre>` otherwise). This

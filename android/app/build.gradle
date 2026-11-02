@@ -15,12 +15,12 @@ android {
         // Cloud inference route for the agent. Supplied at build time (never
         // committed): gradle properties, environment, or an empty default that
         // leaves the agent on the on-device route only.
-        buildConfigField "String", "FREEFHANDS_CLOUD_BASE_URL",
-                "\"${project.findProperty('freehandsCloudBaseUrl') ?: System.getenv('FREEFHANDS_CLOUD_BASE_URL') ?: ''}\""
-        buildConfigField "String", "FREEFHANDS_CLOUD_API_KEY",
-                "\"${project.findProperty('freehandsCloudApiKey') ?: System.getenv('FREEFHANDS_CLOUD_API_KEY') ?: ''}\""
-        buildConfigField "String", "FREEFHANDS_CLOUD_MODEL",
-                "\"${project.findProperty('freehandsCloudModel') ?: System.getenv('FREEFHANDS_CLOUD_MODEL') ?: 'gpt-5.5'}\""
+        buildConfigField "String", "FREEHANDS_CLOUD_BASE_URL",
+                "\"${project.findProperty('freehandsCloudBaseUrl') ?: System.getenv('FREEHANDS_CLOUD_BASE_URL') ?: ''}\""
+        buildConfigField "String", "FREEHANDS_CLOUD_API_KEY",
+                "\"${project.findProperty('freehandsCloudApiKey') ?: System.getenv('FREEHANDS_CLOUD_API_KEY') ?: ''}\""
+        buildConfigField "String", "FREEHANDS_CLOUD_MODEL",
+                "\"${project.findProperty('freehandsCloudModel') ?: System.getenv('FREEHANDS_CLOUD_MODEL') ?: 'gpt-5.5'}\""
         ndk {
             // Package the native capture bridge for the ABIs the app ships.
             abiFilters 'arm64-v8a', 'x86_64'

@@ -2,6 +2,7 @@ package dev.openhands.agentcanvas.freehands
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -212,5 +213,52 @@ class AgentBridgeTest {
 
         assertEquals(6, results.size)
         assertEquals(listOf(0, 1, 2, 2, 2, 2), seen)
+    }
+
+    @Test
+    fun `missing accessibility service stops the loop instead of repeated failures`() {
+        var calls = 0
+        val dispatcher = ActionDispatcher(executor = { ActionResult.Failed("accessibility disabled") })
+        val bridge = AgentBridge(planner = { _, _, _ -> calls++; AgentDecision("tap", AgentAction.Tap(1, 1)) }, dispatcher = dispatcher, observer = ::observation)
+        assertEquals(1, bridge.run("goal").size)
+        assertEquals(1, calls)
+        assertFalse(dispatcher.isRunning)
+    }
+
+    @Test
+    fun `a failed goal leaves a shared service dispatcher available`() {
+        val dispatcher = ActionDispatcher(executor = { ActionResult.Failed("accessibility disabled") })
+        dispatcher.start()
+        val bridge = AgentBridge(
+            planner = { _, _, _ -> AgentDecision("tap", AgentAction.Tap(1, 1)) },
+            dispatcher = dispatcher,
+            observer = ::observation,
+            ownsDispatcher = false,
+        )
+
+        assertEquals(1, bridge.run("goal").size)
+        assertTrue(dispatcher.isRunning)
+        var completed = false
+        assertTrue(dispatcher.submit(AgentAction.Tap(2, 2)) { _, _ -> completed = true })
+        assertTrue(dispatcher.awaitIdle(1000))
+        assertTrue(completed)
+        dispatcher.close()
+    }
+
+    @Test
+    fun `repeated malformed no-op decisions stop promptly`() {
+        val dispatcher = ActionDispatcher(executor = { ActionResult.Success })
+        val bridge = AgentBridge(planner = { _, _, _ -> AgentDecision("invalid response", null, false) }, dispatcher = dispatcher, observer = ::observation)
+        assertEquals(3, bridge.run("goal").size)
+        dispatcher.close()
+    }
+
+    @Test
+    fun `done without telemetry is a successful step`() {
+        val dispatcher = ActionDispatcher(executor = { ActionResult.Success })
+        val metrics = AgentMetrics()
+        val bridge = AgentBridge({ _, _, _ -> AgentDecision("finished", null, done = true) }, dispatcher, ::observation, metrics = metrics)
+        bridge.run("finish")
+        assertEquals(1, metrics.snapshot().successes)
     }
 }

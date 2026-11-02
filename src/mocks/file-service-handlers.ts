@@ -1,4 +1,10 @@
 import { delay, http, HttpResponse } from "msw";
+import {
+  mockWorkspaceOwner,
+  listMockWorkspaceFiles,
+  readMockWorkspaceFile,
+  writeMockWorkspaceFile,
+} from "./workspace-file-store";
 
 export const FILE_VARIANTS_1 = ["file1.txt", "file2.txt", "file3.txt"];
 export const FILE_VARIANTS_2 = [
@@ -39,12 +45,67 @@ const shouldReturnProjectMock =
   typeof import.meta.env.MODE === "string" && import.meta.env.MODE !== "test";
 
 export const FILE_SERVICE_HANDLERS = [
-  http.all("*/api/bash/execute_bash_command", async () =>
-    HttpResponse.json({
-      command: "",
+  http.all("*/api/bash/execute_bash_command", async ({ request }) => {
+    const body = (await request.json()) as { command?: string; cwd?: string };
+    const command = body.command ?? "";
+    const output =
+      shouldReturnProjectMock && command.startsWith("find ")
+        ? listMockWorkspaceFiles(mockWorkspaceOwner(`${body.cwd ?? ""}/`)).join(
+            "\n",
+          )
+        : "";
+    return HttpResponse.json({
+      command,
       exit_code: 0,
-      output: "",
-    }),
+      stdout: output,
+      stderr: "",
+    });
+  }),
+  http.get("*/api/file/download", ({ request }) => {
+    const path = new URL(request.url).searchParams.get("path") ?? "";
+    const text = readMockWorkspaceFile(mockWorkspaceOwner(path), path);
+    return text === undefined
+      ? HttpResponse.json({ error: "File not found" }, { status: 404 })
+      : new HttpResponse(text, {
+          headers: { "Content-Type": "application/octet-stream" },
+        });
+  }),
+  http.post("*/api/file/upload", async ({ request }) => {
+    const url = new URL(request.url);
+    const destination = url.searchParams.get("path");
+    if (!destination?.startsWith("/workspace/project/"))
+      return HttpResponse.json(
+        { error: "Invalid workspace path" },
+        { status: 400 },
+      );
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof Blob))
+      return HttpResponse.json({ error: "Missing file" }, { status: 400 });
+    writeMockWorkspaceFile(
+      mockWorkspaceOwner(destination),
+      destination,
+      await file.text(),
+    );
+    return HttpResponse.json({ success: true });
+  }),
+  http.get(
+    "*/api/conversations/:conversationId/workspace/*",
+    ({ params, request }) => {
+      const prefix = `/api/conversations/${params.conversationId}/workspace/`;
+      const path = decodeURIComponent(
+        new URL(request.url).pathname.split(prefix)[1] ?? "",
+      );
+      const text = readMockWorkspaceFile(String(params.conversationId), path);
+      return text === undefined
+        ? HttpResponse.json({ error: "File not found" }, { status: 404 })
+        : new HttpResponse(text, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
+    },
   ),
 
   http.get("*/api/file/home", async () =>

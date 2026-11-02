@@ -88,7 +88,7 @@ describe("mock conversation handlers", () => {
     expect(conversation?.id).toBe("1");
     expect(conversation?.title).toBe("My New Project");
     expect(conversation?.conversation_url).toContain("/api/conversations/1");
-    expect(conversation?.workspace?.working_dir).toBe("workspace/project");
+    expect(conversation?.workspace?.working_dir).toBe("/workspace/project/1");
   });
 
   it("returns adapted conversation pages for search", async () => {
@@ -189,7 +189,7 @@ describe("mock conversation handlers", () => {
         expect.objectContaining({
           id: "pagination-local",
           sandbox_status: null,
-          workspace: { working_dir: "/workspace/project" },
+          workspace: { working_dir: "/workspace/project/pagination-local" },
         }),
       ]),
     );
@@ -204,7 +204,7 @@ describe("mock conversation handlers", () => {
         tags: { project: "vault", work: "" },
         title: "My New Project",
         updated_at: expect.any(String),
-        workspace: null,
+        workspace: { working_dir: "/workspace/project/1" },
       },
       null,
     ]);
@@ -531,7 +531,7 @@ describe("mock conversation handlers", () => {
         title: "Cloud pagination fixture",
         trigger: null,
         updated_at: expect.any(String),
-        workspace: { working_dir: "/workspace/project" },
+        workspace: { working_dir: "/workspace/project/pagination-cloud" },
       },
       null,
     ]);

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -23,6 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +55,7 @@ import dev.openhands.agentcanvas.R
 class LiveFeedActivity : ComponentActivity() {
 
     private var decoder: VideoDecoder? = null
+    private var pendingGoal: String? = null
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -68,8 +72,12 @@ class LiveFeedActivity : ComponentActivity() {
             val data = result.data
             if (result.resultCode == RESULT_OK && data != null) {
                 CaptureConsent.grant(result.resultCode, data)
-                AgentExecutionService.start(this)
+                val goal = pendingGoal
+                pendingGoal = null
+                if (goal == null) AgentExecutionService.start(this)
+                else AgentExecutionService.runGoal(this, goal)
             } else {
+                pendingGoal = null
                 AgentRuntime.update { it.copy(lastError = getString(R.string.freehands_error_capture_denied)) }
             }
         }
@@ -83,6 +91,11 @@ class LiveFeedActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     LiveFeedScreen(
                         onStart = { requestCaptureThenStart() },
+                        onRunGoal = { goal ->
+                            if (AgentRuntime.state.value.serviceRunning) AgentExecutionService.runGoal(this, goal)
+                            else requestCaptureThenStart(goal)
+                        },
+                        onCancelGoal = { AgentExecutionService.cancelGoal(this) },
                         onStop = { AgentExecutionService.stop(this) },
                         onPermissionTierChange = { tier ->
                             AgentRuntime.update { it.copy(permissionTier = tier) }
@@ -102,12 +115,15 @@ class LiveFeedActivity : ComponentActivity() {
     }
 
     /** Requests capture consent, falling back to a direct start if unavailable. */
-    private fun requestCaptureThenStart() {
+    private fun requestCaptureThenStart(goal: String? = null) {
+        pendingGoal = goal
         val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as? MediaProjectionManager
         if (manager == null) {
             // Without a projection service there is nothing to consent to; start
             // anyway so the UI can report the missing capture component.
-            AgentExecutionService.start(this)
+            if (goal == null) AgentExecutionService.start(this)
+            else AgentExecutionService.runGoal(this, goal)
+            pendingGoal = null
             return
         }
         captureConsentLauncher.launch(manager.createScreenCaptureIntent())
@@ -144,6 +160,8 @@ class LiveFeedActivity : ComponentActivity() {
 @Composable
 private fun LiveFeedScreen(
     onStart: () -> Unit,
+    onRunGoal: (String) -> Unit,
+    onCancelGoal: () -> Unit,
     onStop: () -> Unit,
     onPermissionTierChange: (PermissionTier) -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
@@ -151,8 +169,9 @@ private fun LiveFeedScreen(
     onSurfaceDestroyed: () -> Unit,
 ) {
     val state by AgentRuntime.state.collectAsStateWithLifecycle()
+    var goal by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         FeedSurface(onSurfaceReady = onSurfaceReady, onSurfaceDestroyed = onSurfaceDestroyed)
 
         Card(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
@@ -193,6 +212,26 @@ private fun LiveFeedScreen(
         }
 
         PermissionTierSelector(current = state.permissionTier, onChange = onPermissionTierChange)
+        OutlinedTextField(
+            value = goal,
+            onValueChange = { if (it.length <= AgentExecutionService.MAX_GOAL_LENGTH) goal = it },
+            label = { Text(stringResource(R.string.freehands_goal_label)) },
+            enabled = !state.agentRunning,
+            minLines = 2,
+            maxLines = 4,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
+        if (state.currentPlan.isNotBlank()) {
+            Text(stringResource(R.string.freehands_current_goal, state.currentPlan), modifier = Modifier.padding(top = 8.dp))
+        }
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { onRunGoal(goal.trim()) }, enabled = goal.isNotBlank() && !state.agentRunning) {
+                Text(stringResource(R.string.freehands_action_run_goal))
+            }
+            Button(onClick = onCancelGoal, enabled = state.agentRunning) {
+                Text(stringResource(R.string.freehands_action_cancel_goal))
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),

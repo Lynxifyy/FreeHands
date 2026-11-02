@@ -99,6 +99,15 @@ describe("handleCanvasUIAction", () => {
     expect(onReveal).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["commits", "usage"] as const)(
+    "opens the supported %s tab",
+    (tab) => {
+      handleCanvasUIAction(action({ command: "open_tab", tab }), "conv-1");
+      expect(useConversationStore.getState().selectedTab).toBe(tab);
+      expect(getConversationState("conv-1").selectedTab).toBe(tab);
+    },
+  );
+
   it("open_tab ignores unknown tab values and surfaces a warning for debuggability", () => {
     const onReveal = vi.fn();
     const unsubscribe = subscribeToPanelReveal(onReveal);

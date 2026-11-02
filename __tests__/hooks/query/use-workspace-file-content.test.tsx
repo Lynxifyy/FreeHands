@@ -52,6 +52,10 @@ vi.mock("#/api/cloud/conversation-service.api", () => ({
     readCloudConversationFileMock(...args),
 }));
 
+const resolvePathMock = vi.fn();
+vi.mock("#/api/workspace-file-service", () => ({
+  resolveWorkspaceFilePath: (...args: unknown[]) => resolvePathMock(...args),
+}));
 const fetchMock = vi.fn();
 
 function makeWrapper() {
@@ -77,6 +81,10 @@ describe("useWorkspaceFileContent", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockReset();
+    resolvePathMock.mockReset();
+    resolvePathMock.mockImplementation(
+      async (_conversation: any, path: string) => `/workspace/project/${path}`,
+    );
     useWorkspaceSessionMock.mockReset();
     useActiveConversationMock.mockReset();
     useRuntimeIsReadyMock.mockReset();
@@ -356,6 +364,9 @@ describe("useWorkspaceFileContent", () => {
         },
       });
       readCloudConversationFileMock.mockResolvedValue("hi");
+      resolvePathMock.mockResolvedValue(
+        "/workspace/project/my-repo/src/index.ts",
+      );
 
       const { result } = renderHook(
         () => useWorkspaceFileContent("src/index.ts"),
@@ -393,5 +404,39 @@ describe("useWorkspaceFileContent", () => {
         mimeType: "image/svg+xml",
       });
     });
+  });
+  it("does not replace invalid UTF-8 with editable replacement characters", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => new Uint8Array([0xc3, 0x28]).buffer,
+    });
+    const { result } = renderHook(() => useWorkspaceFileContent("data.bin"), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.kind).toBe("binary");
+    expect(result.current.data?.text).toBeNull();
+  });
+
+  it("uses the shared runtime-home resolver for cloud reads", async () => {
+    getActiveBackendMock.mockReturnValue({
+      backend: { id: "cloud", kind: "cloud" },
+    });
+    resolvePathMock.mockResolvedValue(
+      "/home/agent/workspace/project/conv-1/a.ts",
+    );
+    readCloudConversationFileMock.mockResolvedValue("content");
+    const { result } = renderHook(() => useWorkspaceFileContent("a.ts"), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(resolvePathMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "conv-1" }),
+      "a.ts",
+    );
+    expect(readCloudConversationFileMock).toHaveBeenCalledWith(
+      "conv-1",
+      "/home/agent/workspace/project/conv-1/a.ts",
+    );
   });
 });

@@ -62,6 +62,13 @@ const appBuildConfig = {
       codeSplitting: {
         groups: [
           {
+            // Monaco shares initialization state across its services. Generic
+            // size splitting can create circular chunks and evaluate Emitter
+            // before its class is initialized. Keep this lazy editor together.
+            name: "vendor-monaco",
+            test: /node_modules[\\/](monaco-editor|@monaco-editor)[\\/]/,
+          },
+          {
             // Keep the styling core (HeroUI + tailwind-variants + its
             // tailwind-merge/clsx deps) in one un-size-split chunk. When the
             // generic size-split vendor group slices these apart, a HeroUI
@@ -296,6 +303,7 @@ export default defineConfig(({ mode }) => {
         "react-icons/io5",
         "react-icons/io",
         "@monaco-editor/react",
+        "monaco-editor",
         "react-textarea-autosize",
         "react-markdown",
         "mdast-util-from-markdown",

@@ -236,6 +236,14 @@ function FilesTab() {
                       options={[
                         { value: "rich", label: t(I18nKey.FILES$RICH) },
                         { value: "plain", label: t(I18nKey.FILES$PLAIN) },
+                        ...(selectedFileContent.data?.kind === "text"
+                          ? [
+                              {
+                                value: "edit" as const,
+                                label: t(I18nKey.CODE_EDITOR$EDIT),
+                              },
+                            ]
+                          : []),
                       ]}
                       onChange={setFilesTabContentViewMode}
                     />
@@ -256,6 +264,7 @@ function FilesTab() {
                   <FileContentViewer
                     path={selectedPath}
                     viewMode={contentViewMode}
+                    conversation={activeConversation ?? undefined}
                   />
                 </>
               ) : (

@@ -23,11 +23,18 @@ const renderCommand = (command: TerminalCommand, terminal: Terminal) => {
   const trimmedContent = (content || "").replaceAll("\n", "\r\n").trim();
   // Only write if there's actual content to avoid empty newlines
   if (trimmedContent) {
-    terminal.writeln(parseTerminalOutput(trimmedContent));
+    const prefix = type === "error" ? "\x1b[31m" : "";
+    const suffix = type === "error" ? "\x1b[0m" : "";
+    terminal.writeln(prefix + parseTerminalOutput(trimmedContent) + suffix);
   }
 
   // A command the agent started but that has not finished is called out so the
   // user does not read the empty tail as "the command produced nothing".
+  if (type === "error") {
+    terminal.writeln(
+      `  \x1b[31m✖ ${command.exitCode !== undefined ? i18n.t(I18nKey.TERMINAL$EXIT_CODE, { code: command.exitCode }) : i18n.t(I18nKey.TERMINAL$COMMAND_FAILED)}\x1b[0m`,
+    );
+  }
   if (type === "running") {
     terminal.writeln(`  ⏳ ${i18n.t(I18nKey.TERMINAL$STILL_RUNNING)}`);
   }

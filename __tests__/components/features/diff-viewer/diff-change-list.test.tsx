@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DiffChangeList } from "#/components/features/diff-viewer/diff-change-list";
@@ -11,6 +11,13 @@ vi.mock("framer-motion", async (importOriginal) => {
     useReducedMotion: () => true,
   };
 });
+
+vi.mock("#/utils/monaco-loader", () => ({
+  useMonaco: (enabled: boolean) => ({
+    monaco: enabled ? {} : null,
+    error: null,
+  }),
+}));
 
 vi.mock("#/hooks/query/use-unified-git-diff", () => ({
   useUnifiedGitDiff: () => ({
@@ -45,40 +52,41 @@ describe("DiffChangeList", () => {
     const [firstToggle, secondToggle] = screen.getAllByTestId("collapse");
 
     await user.click(firstToggle);
+    await screen.findByTestId("file-diff-viewer");
     expect(
-      screen.getAllByTestId("file-diff-viewer-outer")[0].querySelector(
-        '[data-testid="file-diff-viewer"]',
-      ),
+      screen
+        .getAllByTestId("file-diff-viewer-outer")[0]
+        .querySelector('[data-testid="file-diff-viewer"]'),
     ).toBeTruthy();
     expect(
-      screen.getAllByTestId("file-diff-viewer-outer")[1].querySelector(
-        '[data-testid="file-diff-viewer"]',
-      ),
+      screen
+        .getAllByTestId("file-diff-viewer-outer")[1]
+        .querySelector('[data-testid="file-diff-viewer"]'),
     ).toBeNull();
 
     await user.click(secondToggle);
     expect(
-      screen.getAllByTestId("file-diff-viewer-outer")[0].querySelector(
-        '[data-testid="file-diff-viewer"]',
-      ),
+      screen
+        .getAllByTestId("file-diff-viewer-outer")[0]
+        .querySelector('[data-testid="file-diff-viewer"]'),
     ).toBeNull();
     expect(
-      screen.getAllByTestId("file-diff-viewer-outer")[1].querySelector(
-        '[data-testid="file-diff-viewer"]',
-      ),
+      screen
+        .getAllByTestId("file-diff-viewer-outer")[1]
+        .querySelector('[data-testid="file-diff-viewer"]'),
     ).toBeTruthy();
   });
 
   it("collapses the open file when its header is clicked again", async () => {
     const user = userEvent.setup();
-    render(
-      <DiffChangeList changes={[{ path: "a.ts", status: "M" }]} />,
+    render(<DiffChangeList changes={[{ path: "a.ts", status: "M" }]} />);
+
+    await user.click(screen.getByTestId("collapse"));
+    await screen.findByTestId("file-diff-viewer");
+
+    await user.click(screen.getByTestId("collapse"));
+    await waitFor(() =>
+      expect(screen.queryByTestId("file-diff-viewer")).not.toBeInTheDocument(),
     );
-
-    await user.click(screen.getByTestId("collapse"));
-    expect(screen.getByTestId("file-diff-viewer")).toBeInTheDocument();
-
-    await user.click(screen.getByTestId("collapse"));
-    expect(screen.queryByTestId("file-diff-viewer")).not.toBeInTheDocument();
   });
 });

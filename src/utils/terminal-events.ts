@@ -4,11 +4,12 @@ import {
   isExecuteBashObservationEvent,
 } from "#/types/agent-server/type-guards";
 
-export type TerminalCommandType = "input" | "output" | "running";
+export type TerminalCommandType = "input" | "output" | "running" | "error";
 
 export interface TerminalCommand {
   content: string;
   type: TerminalCommandType;
+  exitCode?: number;
 }
 
 /**
