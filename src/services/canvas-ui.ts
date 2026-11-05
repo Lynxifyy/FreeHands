@@ -14,6 +14,7 @@ const VALID_TABS: ReadonlySet<ConversationTab> = new Set<ConversationTab>([
   "terminal",
   "planner",
   "tasklist",
+  "preview",
 ]);
 
 type PanelRevealListener = () => void;
