@@ -9,6 +9,7 @@ import {
   withWorkspaceCacheBuster,
 } from "#/stores/use-workspace-mutation-counter";
 import { useUiPreviewStore } from "#/stores/ui-preview-store";
+import { useCodeToolsSettingsStore } from "#/stores/code-tools-settings-store";
 import { useOptionalConversationId } from "#/hooks/use-conversation-id";
 import { ConversationTabEmptyState } from "#/components/features/conversation/conversation-tab-empty-state";
 import { buildPreviewSrcDoc } from "#/services/ui-preview/build-src-doc";
@@ -44,6 +45,12 @@ function UiPreviewPanel() {
   const bumpRefresh = useUiPreviewStore((state) => state.bumpRefresh);
   const setAutoRefresh = useUiPreviewStore((state) => state.setAutoRefresh);
   const mutationCount = useWorkspaceMutationCounter((state) => state.count);
+  const settingsAutoRefresh = useCodeToolsSettingsStore(
+    (state) => state.previewAutoRefresh,
+  );
+  const allowScripts = useCodeToolsSettingsStore(
+    (state) => state.previewAllowScripts,
+  );
   const query = useWorkspaceFileContent(target?.path ?? null);
 
   // Agent file edits bump the shared mutation counter; only follow it when the
@@ -51,7 +58,8 @@ function UiPreviewPanel() {
   const effectiveToken =
     target === undefined
       ? 0
-      : target.refreshToken + (target.autoRefresh ? mutationCount : 0);
+      : target.refreshToken +
+        (target.autoRefresh && settingsAutoRefresh ? mutationCount : 0);
 
   const detected = useMemo(
     () =>
@@ -171,7 +179,7 @@ function UiPreviewPanel() {
               <iframe
                 data-testid="ui-preview-frame"
                 title={target.path}
-                sandbox=""
+                sandbox={allowScripts ? "allow-scripts" : ""}
                 srcDoc={srcDoc}
                 className="h-full w-full border-0 bg-white"
               />
@@ -179,7 +187,7 @@ function UiPreviewPanel() {
               <iframe
                 data-testid="ui-preview-frame"
                 title={target.path}
-                sandbox=""
+                sandbox={allowScripts ? "allow-scripts" : ""}
                 src={staticUrl}
                 className="h-full w-full border-0 bg-white"
               />

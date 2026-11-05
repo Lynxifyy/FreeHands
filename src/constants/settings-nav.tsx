@@ -1,4 +1,10 @@
-import { AppWindow, Brain, Route as RouteIcon, Shield } from "lucide-react";
+import {
+  AppWindow,
+  Brain,
+  Route as RouteIcon,
+  Shield,
+  Wrench,
+} from "lucide-react";
 import KeyIcon from "#/icons/key.svg?react";
 import MemoryIcon from "#/icons/memory_icon.svg?react";
 import CircuitIcon from "#/icons/u-circuit.svg?react";
@@ -58,6 +64,14 @@ export const OSS_NAV_ITEMS: SettingsNavItem[] = [
     to: "/settings/verification",
     text: "SETTINGS$NAV_VERIFICATION",
     subtitle: "SETTINGS$PAGE_VERIFICATION_SUBLINE",
+  },
+  {
+    // Code tooling: how loudly code_critique reports and how the UI Preview
+    // renders. Frontend behaviour, stored locally.
+    icon: <Wrench className="size-4" strokeWidth={2} aria-hidden />,
+    to: "/settings/code-tools",
+    text: "SETTINGS$NAV_CODE_TOOLS",
+    subtitle: "SETTINGS$PAGE_CODE_TOOLS_SUBLINE",
   },
   {
     icon: <AppWindow className="size-4" strokeWidth={2} aria-hidden />,
