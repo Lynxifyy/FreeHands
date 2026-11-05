@@ -12,6 +12,7 @@
 @theme inline {
   --color-primary: var(--oh-color-primary);
   --color-logo: var(--oh-color-logo);
+  --color-discord: var(--oh-color-discord);
   --color-canvas-base: var(--oh-color-base);
   /* Keep color names distinct from font sizes such as text-base. */
   --color-on-primary: var(--oh-color-base);
@@ -86,6 +87,8 @@
   color-scheme: dark;
   --oh-color-primary: #c9b974;
   --oh-color-logo: #cfb755;
+  /* Discord's brand blurple, used by the connect menu. */
+  --oh-color-discord: #5865f2;
   --oh-color-base: var(--cool-grey-950);
   --oh-color-base-secondary: var(--cool-grey-925);
   --oh-color-danger: #e76a5e;

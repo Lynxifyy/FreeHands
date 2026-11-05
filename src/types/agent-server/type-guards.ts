@@ -4,6 +4,7 @@ import {
   LEGACY_CANVAS_UI_TOOL_NAME,
 } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
+import { CONNECT_DISCORD_TOOL_NAME } from "#/constants/discord";
 import { REQUEST_SECRET_TOOL_NAME } from "#/constants/secret-request";
 
 import {
@@ -23,6 +24,7 @@ import {
   CanvasUIAction,
   LaunchChildConversationAction,
   RequestSecretAction,
+  ConnectDiscordAction,
 } from "./core";
 import {
   AgentErrorEvent,
@@ -238,6 +240,17 @@ export const isRequestSecretActionEvent = (
   event: OpenHandsEvent,
 ): event is ActionEvent<RequestSecretAction> =>
   isActionEvent(event) && event.tool_name === REQUEST_SECRET_TOOL_NAME;
+
+/**
+ * Type guard for connect-discord tool ActionEvents.
+ *
+ * Discriminates on tool_name, like the other client tools, so the
+ * SDK-generated action kind stays contained in the constants module.
+ */
+export const isConnectDiscordActionEvent = (
+  event: OpenHandsEvent,
+): event is ActionEvent<ConnectDiscordAction> =>
+  isActionEvent(event) && event.tool_name === CONNECT_DISCORD_TOOL_NAME;
 
 /**
  * Type guard function to check if an event is a system prompt event

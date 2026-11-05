@@ -40,6 +40,7 @@ import {
   isAutomationFormUpdateActionEvent,
   isLaunchChildConversationActionEvent,
   isRequestSecretActionEvent,
+  isConnectDiscordActionEvent,
 } from "#/types/agent-server/type-guards";
 import {
   asSessionFrame,
@@ -53,6 +54,7 @@ import { handleCanvasUIAction } from "#/services/canvas-ui";
 import { handleAutomationFormUpdateAction } from "#/services/automation-form";
 import { handleLaunchChildConversationAction } from "#/services/child-conversation-launch";
 import { handleRequestSecretAction } from "#/services/secret-request";
+import { handleConnectDiscordAction } from "#/services/discord-connect";
 import { ConversationStateUpdateEventStats } from "#/types/agent-server/core/events/conversation-state-event";
 import type {
   ConversationErrorEvent,
@@ -876,6 +878,17 @@ export function ConversationWebSocketProvider({
           // is posted back once they close it.
           if (conversationId && isRequestSecretActionEvent(event)) {
             void handleRequestSecretAction(
+              event.action,
+              conversationId,
+              event.tool_call_id,
+            );
+          }
+
+          // Same client-tool pattern: the connect menu opens, and the outcome
+          // (the guild id the bot was added to) is posted back once the user
+          // confirms.
+          if (conversationId && isConnectDiscordActionEvent(event)) {
+            void handleConnectDiscordAction(
               event.action,
               conversationId,
               event.tool_call_id,

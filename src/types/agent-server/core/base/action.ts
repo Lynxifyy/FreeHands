@@ -1,6 +1,7 @@
 import { AUTOMATION_FORM_UPDATE_ACTION_KIND } from "#/constants/automation-form";
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
+import { CONNECT_DISCORD_ACTION_KIND } from "#/constants/discord";
 import { REQUEST_SECRET_ACTION_KIND } from "#/constants/secret-request";
 import { ActionBase } from "./base";
 import { TaskItem } from "./common";
@@ -366,6 +367,18 @@ export interface RequestSecretAction extends ActionBase<
   reason?: string | null;
 }
 
+/**
+ * Request to connect the FreeHands Discord bot to a server, emitted over the
+ * existing WebSocket and intercepted by handleConnectDiscordAction. Carries an
+ * optional guild id the agent already knows; the bot token never passes
+ * through the agent.
+ */
+export interface ConnectDiscordAction extends ActionBase<
+  typeof CONNECT_DISCORD_ACTION_KIND
+> {
+  guild_id?: string | null;
+}
+
 export type Action =
   | MCPToolAction
   | FinishAction
@@ -394,4 +407,5 @@ export type Action =
   | CanvasUIAction
   | AutomationFormUpdateAction
   | LaunchChildConversationAction
-  | RequestSecretAction;
+  | RequestSecretAction
+  | ConnectDiscordAction;

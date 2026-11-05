@@ -1,4 +1,5 @@
 import { CHILD_CONVERSATION_RESULT_PREFIX } from "#/constants/child-conversation";
+import { DISCORD_CONNECT_RESULT_PREFIX } from "#/constants/discord";
 import { SECRET_REQUEST_RESULT_PREFIX } from "#/constants/secret-request";
 import { MessageEvent, OpenHandsEvent } from "#/types/agent-server/core";
 import {
@@ -61,6 +62,7 @@ export const isCorrectiveNudge = (event: MessageEvent): boolean =>
 const CLIENT_TOOL_RESULT_PREFIXES = [
   CHILD_CONVERSATION_RESULT_PREFIX,
   SECRET_REQUEST_RESULT_PREFIX,
+  DISCORD_CONNECT_RESULT_PREFIX,
 ];
 
 const isClientToolResult = (event: MessageEvent): boolean => {
