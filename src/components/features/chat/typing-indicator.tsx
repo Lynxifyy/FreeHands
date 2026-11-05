@@ -18,6 +18,7 @@ import {
 } from "#/components/conversation-events/chat/event-content-helpers/get-action-event-title";
 import { MonoComponent } from "./mono-component";
 import { PathComponent } from "./path-component";
+import { ThinkingOrb } from "./thinking-orb";
 
 const THINKING_ACTIVITY: EventTitleDescriptor = {
   kind: "translation",
@@ -132,10 +133,7 @@ export function TypingIndicator({ events }: TypingIndicatorProps) {
       role="status"
       aria-live="polite"
     >
-      <span
-        aria-hidden="true"
-        className="size-1.5 shrink-0 animate-pulse rounded-full bg-status-success motion-reduce:animate-none"
-      />
+      <ThinkingOrb size={16} className="mr-0.5" />
       <span className="min-w-0 truncate">
         {activity.kind === "text" ? (
           activity.text

@@ -218,9 +218,13 @@ describe("EventMessage - ThinkAction rendering", () => {
     // The collapsible thinking wrapper should exist for reasoning_content
     expect(screen.getByTestId("collapsible-thinking")).toBeInTheDocument();
 
-    // The reasoning content should be hidden initially
+    // Collapsed, only the one-line preview shows; the full reasoning stays out
+    // of the DOM until the user expands it.
     expect(
-      screen.queryByText("I need to think carefully about this step."),
+      screen.getByTestId("collapsible-thinking-preview"),
+    ).toHaveTextContent("I need to think carefully about this step.");
+    expect(
+      screen.queryByTestId("collapsible-thinking-content"),
     ).not.toBeInTheDocument();
   });
 

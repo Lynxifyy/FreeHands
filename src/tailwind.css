@@ -13,6 +13,9 @@
   --color-primary: var(--oh-color-primary);
   --color-logo: var(--oh-color-logo);
   --color-discord: var(--oh-color-discord);
+  /* FreeHands thinking orb: the white circle's eyes blink and glance around. */
+  --animate-thinking-blink: thinking-blink 3.6s ease-in-out infinite;
+  --animate-thinking-look: thinking-look 6.5s ease-in-out infinite;
   --color-canvas-base: var(--oh-color-base);
   /* Keep color names distinct from font sizes such as text-base. */
   --color-on-primary: var(--oh-color-base);
@@ -626,6 +629,37 @@ button.extension-module-card-interactive {
   }
   100% {
     background-position: -200% 0%;
+  }
+}
+
+/* FreeHands thinking orb: a white circle whose eyes blink and glance around. */
+@keyframes thinking-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+  98% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes thinking-look {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-22%);
+  }
+  45% {
+    transform: translateX(22%);
+  }
+  70% {
+    transform: translateX(0);
   }
 }
 
