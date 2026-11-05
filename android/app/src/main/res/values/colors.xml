@@ -5,5 +5,5 @@
          "resource color/colorPrimary not found". -->
     <color name="colorPrimary">#1F2937</color>
     <color name="colorPrimaryDark">#111827</color>
-    <color name="colorAccent">#4F46E5</color>
+    <color name="colorAccent">#3B82F6</color>
 </resources>

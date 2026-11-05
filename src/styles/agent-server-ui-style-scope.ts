@@ -19,7 +19,7 @@ export const AGENT_SERVER_UI_DEFAULT_CSS_VARIABLES = {
   // Brand/button colors (--oh-color-primary, --oh-accent, --oh-warning) live in
   // tailwind.css and are overridden at runtime by applyColorTheme(); keep them
   // out of inline defaults so theme tokens are not blocked by element.style.
-  "--oh-color-logo": "#cfb755",
+  "--oh-color-logo": "#60a5fa",
   "--oh-color-base": "var(--cool-grey-950)",
   "--oh-color-base-secondary": "var(--cool-grey-925)",
   "--oh-color-danger": "#e76a5e",

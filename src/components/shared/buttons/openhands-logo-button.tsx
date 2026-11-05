@@ -11,6 +11,8 @@ export type OpenHandsLogoButtonProps = {
   className?: string;
   /** Applied to the root `<svg>` (e.g. `max-w-none` so Tailwind preflight doesn’t clamp wide marks inside a narrow flex slot). */
   logoClassName?: string;
+  /** Text-color utility applied to the mark; defaults to the neutral contrast color. */
+  colorClassName?: string;
   logoWidth?: number;
   logoHeight?: number;
 };
@@ -18,6 +20,7 @@ export type OpenHandsLogoButtonProps = {
 export function OpenHandsLogoButton({
   className,
   logoClassName,
+  colorClassName = "text-contrast",
   logoWidth = DEFAULT_LOGO_WIDTH,
   logoHeight = DEFAULT_LOGO_HEIGHT,
 }: OpenHandsLogoButtonProps = {}) {
@@ -35,7 +38,8 @@ export function OpenHandsLogoButton({
         width={logoWidth}
         height={logoHeight}
         className={cn(
-          "shrink-0 text-contrast [&_path[fill=white]]:fill-current",
+          "shrink-0 [&_path[fill=white]]:fill-current",
+          colorClassName,
           logoClassName,
         )}
       />

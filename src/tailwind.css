@@ -85,8 +85,10 @@
 
 :root {
   color-scheme: dark;
-  --oh-color-primary: #c9b974;
-  --oh-color-logo: #cfb755;
+  /* FreeHands brand blue (was gold #c9b974). Drives primary buttons, badges
+     and the wordmark, so keep the primary/accent/logo trio on one hue. */
+  --oh-color-primary: #3b82f6;
+  --oh-color-logo: #60a5fa;
   /* Discord's brand blurple, used by the connect menu. */
   --oh-color-discord: #5865f2;
   --oh-color-base: var(--cool-grey-950);
@@ -127,7 +129,7 @@
   --oh-scrollbar-hover: color-mix(in srgb, var(--cool-grey-400) 50%, transparent);
   --oh-default: var(--cool-grey-800);
   --oh-default-foreground: var(--cool-grey-100);
-  --oh-accent: #c9b974;
+  --oh-accent: #3b82f6;
   --oh-accent-foreground: var(--cool-grey-950);
   --oh-success: #a5e75e;
   --oh-success-foreground: var(--cool-grey-950);
