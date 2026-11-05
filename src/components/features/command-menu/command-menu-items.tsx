@@ -39,6 +39,7 @@ export const COMMAND_MENU_ROUTE = {
   condenserSettings: "/settings/condenser",
   agentContextSettings: "/settings/agent-context",
   verificationSettings: "/settings/verification",
+  codeToolsSettings: "/settings/code-tools",
   appSettings: "/settings/app",
   secretsSettings: "/settings/secrets",
 } as const;
@@ -56,6 +57,7 @@ export type CommandMenuItemId =
   | "condenser-settings"
   | "agent-context-settings"
   | "verification-settings"
+  | "code-tools-settings"
   | "app-settings"
   | "secrets-settings"
   | "toggle-sidebar";
@@ -221,6 +223,15 @@ export const createCommandMenuItems = ({
       keywordsKey: I18nKey.COMMAND_MENU$VERIFICATION_SETTINGS_KEYWORDS,
       icon: <ShieldCheck size={ICON_SIZE} />,
       to: COMMAND_MENU_ROUTE.verificationSettings,
+    },
+    {
+      id: "code-tools-settings",
+      group: "settings",
+      titleKey: I18nKey.SETTINGS$NAV_CODE_TOOLS,
+      descriptionKey: I18nKey.SETTINGS$PAGE_CODE_TOOLS_SUBLINE,
+      keywordsKey: I18nKey.COMMAND_MENU$CODE_TOOLS_SETTINGS_KEYWORDS,
+      icon: <Wrench size={ICON_SIZE} />,
+      to: COMMAND_MENU_ROUTE.codeToolsSettings,
     },
     {
       id: "app-settings",

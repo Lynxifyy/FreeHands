@@ -53044,5 +53044,23 @@
     "tr": "Varsayılanlara sıfırla",
     "uk": "Скинути до стандартних",
     "id": "Setel ulang ke default"
+  },
+  "COMMAND_MENU$CODE_TOOLS_SETTINGS_KEYWORDS": {
+    "en": "code tools code review critique strictness preview sandbox scripts",
+    "ja": "コードツール コードレビュー 批評 厳格さ プレビュー サンドボックス スクリプト",
+    "zh-CN": "代码工具 代码审查 批评 严格程度 预览 沙箱 脚本",
+    "zh-TW": "程式碼工具 程式碼審查 批評 嚴格程度 預覽 沙箱 指令碼",
+    "ko-KR": "코드 도구 코드 검토 비평 엄격도 미리보기 샌드박스 스크립트",
+    "no": "kodeverktøy kodegjennomgang kritikk strenghet forhåndsvisning sandkasse skript",
+    "ar": "أدوات الكود مراجعة الكود نقد الصرامة معاينة بيئة معزولة برامج نصية",
+    "de": "Code-Tools Code-Prüfung Kritik Strenge Vorschau Sandbox Skripte",
+    "fr": "outils de code revue de code critique sévérité aperçu bac à sable scripts",
+    "it": "strumenti di codice revisione del codice critica rigore anteprima sandbox script",
+    "pt": "ferramentas de código revisão de código crítica rigor pré-visualização sandbox scripts",
+    "es": "herramientas de código revisión de código crítica rigor vista previa sandbox scripts",
+    "ca": "eines de codi revisió de codi crítica rigor vista prèvia sandbox scripts",
+    "tr": "kod araçları kod incelemesi eleştiri sıkılık önizleme korumalı alan betikler",
+    "uk": "інструменти коду перевірка коду критика суворість попередній перегляд пісочниця скрипти",
+    "id": "alat kode tinjauan kode kritik ketatnya pratinjau sandbox skrip"
   }
 }
