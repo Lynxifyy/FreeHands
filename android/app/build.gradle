@@ -9,8 +9,9 @@ android {
         applicationId "dev.openhands.agentcanvas"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Bumped per release so the in-app updater can compare builds.
+        versionCode 30
+        versionName "1.29.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Cloud inference route for the agent. Supplied at build time (never
         // committed): gradle properties, environment, or an empty default that

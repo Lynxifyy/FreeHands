@@ -12,6 +12,7 @@ import {
   DEFAULT_AGENT_SERVER_ANALYTICS,
 } from "./components/providers";
 import { installMarsWebBridge } from "./api/mars/mars-web-bridge";
+import { installAppUpdaterBridge } from "./utils/app-updater";
 import { waitForI18n } from "./i18n";
 import { shouldStartMockWorker } from "./mocks/should-start-mock-worker";
 import { isNativeShell } from "./utils/native-shell";
@@ -25,6 +26,9 @@ async function prepareApp() {
   const marsBridge = isNativeShell()
     ? Promise.resolve(false)
     : installMarsWebBridge();
+  // Expose the Android shell's in-app updater as `window.freehandsUpdater`
+  // before render, so the settings update control can read it synchronously.
+  installAppUpdaterBridge();
   await Promise.all([waitForI18n(), marsBridge]);
 
   if (shouldStartMockWorker()) {
