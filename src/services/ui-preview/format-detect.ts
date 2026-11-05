@@ -72,3 +72,19 @@ export function detectUiPreviewFormat(
 
   return "unknown";
 }
+
+/**
+ * Path-only resolution for callers that must decide *where* to route a file
+ * before its body is available (the `canvas_ui_control` dispatcher). Unlike
+ * {@link detectUiPreviewFormat}, a `.kt` path is taken as a Compose request
+ * because the agent only asks to preview a Kotlin file it knows is UI.
+ *
+ * Returns `null` when the file has no UI preview and should fall back to the
+ * Files tab.
+ */
+export function previewFormatForPath(path: string): UiPreviewFormat | null {
+  const ext = getExtension(path);
+  if (ext === "kt" || ext === "kts") return "compose";
+  const detected = detectUiPreviewFormat(path);
+  return isUiPreviewFormat(detected) ? detected : null;
+}

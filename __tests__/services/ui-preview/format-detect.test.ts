@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   detectUiPreviewFormat,
   isUiPreviewFormat,
+  previewFormatForPath,
   UI_PREVIEW_FORMATS,
 } from "#/services/ui-preview/format-detect";
 
@@ -84,5 +85,26 @@ describe("isUiPreviewFormat", () => {
       "compose",
       "markdown",
     ]);
+  });
+});
+
+describe("previewFormatForPath", () => {
+  it("resolves UI formats from the extension alone", () => {
+    expect(previewFormatForPath("index.html")).toBe("html");
+    expect(previewFormatForPath("logo.svg")).toBe("svg");
+    expect(previewFormatForPath("res/layout/main.xml")).toBe("xml");
+    expect(previewFormatForPath("README.md")).toBe("markdown");
+  });
+
+  it("treats a Kotlin file as Compose when only the path is known", () => {
+    // Content-aware detection needs the body, which the tab supplies later;
+    // at dispatch time an explicit show_preview on a .kt is a Compose request.
+    expect(previewFormatForPath("app/MainActivity.kt")).toBe("compose");
+  });
+
+  it("returns null for files with no UI preview", () => {
+    expect(previewFormatForPath("report.pdf")).toBeNull();
+    expect(previewFormatForPath("src/main.py")).toBeNull();
+    expect(previewFormatForPath("Makefile")).toBeNull();
   });
 });
