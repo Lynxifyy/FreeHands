@@ -271,3 +271,48 @@ describe("critiqueCode", () => {
     expect(result.language).toBe("kotlin");
   });
 });
+
+describe("critiqueCode strictness", () => {
+  const warnOnly = { path: "index.html", content: '<img src="a.png">' };
+
+  it("defaults to normal: keeps warnings and errors", () => {
+    const result = critiqueCode(warnOnly);
+    expect(result.verdict).toBe("warn");
+    expect(result.issues.length).toBeGreaterThan(0);
+  });
+
+  it("relaxed keeps only errors", () => {
+    const result = critiqueCode({ ...warnOnly, strictness: "relaxed" });
+    expect(result.verdict).toBe("pass");
+    expect(result.issues).toEqual([]);
+  });
+
+  it("relaxed still reports an error", () => {
+    const result = critiqueCode({
+      path: "index.html",
+      content: "<div><p>hi</div>",
+      strictness: "relaxed",
+    });
+    expect(result.verdict).toBe("fail");
+  });
+
+  it("strict keeps informational notes too", () => {
+    const result = critiqueCode({
+      path: "index.html",
+      content: '<!-- TODO: x --><img src="a.png" alt="a">',
+      strictness: "strict",
+    });
+    expect(result.issues.some((i) => i.category === "completeness")).toBe(true);
+  });
+
+  it("normal drops informational notes", () => {
+    const result = critiqueCode({
+      path: "index.html",
+      content: '<!-- TODO: x --><img src="a.png" alt="a">',
+      strictness: "normal",
+    });
+    expect(result.issues.some((i) => i.category === "completeness")).toBe(
+      false,
+    );
+  });
+});

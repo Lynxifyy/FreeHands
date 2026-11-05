@@ -141,3 +141,21 @@ describe("handleCodeCritiqueAction", () => {
     expect(postClientToolResultMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("handleCodeCritiqueAction strictness", () => {
+  it("honours the stored strictness setting", async () => {
+    const { useCodeToolsSettingsStore } =
+      await import("#/stores/code-tools-settings-store");
+    useCodeToolsSettingsStore.setState({ critiqueStrictness: "relaxed" });
+
+    await handleCodeCritiqueAction(
+      action({ code: '<img src="a.png">', language: "html" }),
+      CONVERSATION,
+      "call-relaxed",
+    );
+
+    expect(postedResult()).toMatchObject({ verdict: "pass" });
+
+    useCodeToolsSettingsStore.setState({ critiqueStrictness: "normal" });
+  });
+});

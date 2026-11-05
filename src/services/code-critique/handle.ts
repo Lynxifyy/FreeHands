@@ -8,6 +8,7 @@ import type { CodeCritiqueAction } from "#/types/agent-server/core";
 import { claimClientToolCall } from "#/utils/claim-client-tool-call";
 import { getGitPath } from "#/utils/get-git-path";
 import { postClientToolResult } from "#/services/client-tool-result";
+import { useCodeToolsSettingsStore } from "#/stores/code-tools-settings-store";
 import { critiqueCode } from "./critique";
 
 interface CritiqueErrorResult {
@@ -65,6 +66,7 @@ export async function handleCodeCritiqueAction(
 
   const inlineCode = action.code?.trim();
   const path = action.path?.trim();
+  const strictness = useCodeToolsSettingsStore.getState().critiqueStrictness;
 
   let result: unknown;
   if (inlineCode) {
@@ -72,6 +74,7 @@ export async function handleCodeCritiqueAction(
       path: path ?? "snippet",
       content: action.code ?? "",
       language: action.language ?? undefined,
+      strictness,
     });
   } else if (path) {
     try {
@@ -80,6 +83,7 @@ export async function handleCodeCritiqueAction(
         path,
         content,
         language: action.language ?? undefined,
+        strictness,
       });
     } catch (error) {
       result = errorResult(
