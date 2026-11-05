@@ -81,7 +81,7 @@ ARG AGENT_SERVER_VERSION
 # values here keep a direct `docker build` on the same fork. Pass an empty
 # AGENT_SERVER_SDK_GIT_REF to keep the base image's stock SDK.
 ARG AGENT_SERVER_SDK_GIT_REPO="https://github.com/Lynxifyy/software-agent-sdk-2.0"
-ARG AGENT_SERVER_SDK_GIT_REF="5906b3081bf885f8b31a4bcaa94effc48d87b417"
+ARG AGENT_SERVER_SDK_GIT_REF="2b605f4783871df275b9af07e2a9d3ab8fcf2669"
 ARG OPENHANDS_BUILD_GIT_SHA=unknown
 ARG OPENHANDS_BUILD_GIT_REF=unknown
 ARG VITE_BASE_PATH="/canvas"
