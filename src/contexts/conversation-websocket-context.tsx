@@ -40,6 +40,7 @@ import {
   isAutomationFormUpdateActionEvent,
   isLaunchChildConversationActionEvent,
   isRequestSecretActionEvent,
+  isCodeCritiqueActionEvent,
   isConnectDiscordActionEvent,
 } from "#/types/agent-server/type-guards";
 import {
@@ -54,6 +55,7 @@ import { handleCanvasUIAction } from "#/services/canvas-ui";
 import { handleAutomationFormUpdateAction } from "#/services/automation-form";
 import { handleLaunchChildConversationAction } from "#/services/child-conversation-launch";
 import { handleRequestSecretAction } from "#/services/secret-request";
+import { handleCodeCritiqueAction } from "#/services/code-critique/handle";
 import { handleConnectDiscordAction } from "#/services/discord-connect";
 import { ConversationStateUpdateEventStats } from "#/types/agent-server/core/events/conversation-state-event";
 import type {
@@ -878,6 +880,17 @@ export function ConversationWebSocketProvider({
           // is posted back once they close it.
           if (conversationId && isRequestSecretActionEvent(event)) {
             void handleRequestSecretAction(
+              event.action,
+              conversationId,
+              event.tool_call_id,
+            );
+          }
+
+          // Same client-tool pattern, but the work is a static analysis: run
+          // the analyzers and post the findings back so the agent can act on
+          // them before it declares the task done.
+          if (conversationId && isCodeCritiqueActionEvent(event)) {
+            void handleCodeCritiqueAction(
               event.action,
               conversationId,
               event.tool_call_id,

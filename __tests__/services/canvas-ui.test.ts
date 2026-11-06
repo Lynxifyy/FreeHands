@@ -13,6 +13,7 @@ import {
 } from "#/services/canvas-ui";
 import { useConversationStore } from "#/stores/conversation-store";
 import { useFilesTabStore } from "#/stores/files-tab-store";
+import { useUiPreviewStore } from "#/stores/ui-preview-store";
 import type { CanvasUIAction } from "#/types/agent-server/core";
 import { isCanvasUIActionEvent } from "#/types/agent-server/type-guards";
 import {
@@ -40,6 +41,7 @@ describe("handleCanvasUIAction", () => {
       selectedConversationId: null,
       openPaths: [],
     });
+    useUiPreviewStore.setState({ targets: {} });
   });
 
   it("navigate_to_file selects the files tab, reveals the panel, and sets selectedPath", () => {
@@ -56,7 +58,62 @@ describe("handleCanvasUIAction", () => {
     expect(useFilesTabStore.getState().openPaths).toEqual(["docs/intro.html"]);
   });
 
-  it("show_preview selects the files tab and the requested path", () => {
+  it("show_preview opens the preview tab for a UI-format file with a conversation", () => {
+    handleCanvasUIAction(
+      action({ command: "show_preview", path: "report.html" }),
+      "conv-1",
+    );
+
+    expect(useConversationStore.getState().selectedTab).toBe("preview");
+    expect(useUiPreviewStore.getState().targets["conv-1"]).toMatchObject({
+      path: "report.html",
+      format: "html",
+    });
+    // The Files tab selection is untouched: this is a preview, not a source view.
+    expect(useFilesTabStore.getState().selectedPath).toBeNull();
+  });
+
+  it("show_preview routes an Android XML layout to the preview tab as XML", () => {
+    handleCanvasUIAction(
+      action({
+        command: "show_preview",
+        path: "app/src/main/res/layout/main.xml",
+      }),
+      "conv-1",
+    );
+
+    expect(useConversationStore.getState().selectedTab).toBe("preview");
+    expect(useUiPreviewStore.getState().targets["conv-1"]).toMatchObject({
+      path: "app/src/main/res/layout/main.xml",
+      format: "xml",
+    });
+  });
+
+  it("show_preview routes a Kotlin file to the preview tab as Compose", () => {
+    handleCanvasUIAction(
+      action({ command: "show_preview", path: "app/MainActivity.kt" }),
+      "conv-1",
+    );
+
+    expect(useConversationStore.getState().selectedTab).toBe("preview");
+    expect(useUiPreviewStore.getState().targets["conv-1"]).toMatchObject({
+      path: "app/MainActivity.kt",
+      format: "compose",
+    });
+  });
+
+  it("show_preview falls back to the Files tab for a non-UI file", () => {
+    handleCanvasUIAction(
+      action({ command: "show_preview", path: "src/main.py" }),
+      "conv-1",
+    );
+
+    expect(useConversationStore.getState().selectedTab).toBe("files");
+    expect(useFilesTabStore.getState().selectedPath).toBe("src/main.py");
+    expect(useUiPreviewStore.getState().targets["conv-1"]).toBeUndefined();
+  });
+
+  it("show_preview falls back to the Files tab when no conversation is known", () => {
     handleCanvasUIAction(
       action({ command: "show_preview", path: "report.html" }),
     );
@@ -185,6 +242,7 @@ describe("openWorkspaceFile", () => {
       selectedConversationId: null,
       openPaths: [],
     });
+    useUiPreviewStore.setState({ targets: {} });
   });
 
   it("delegates to navigate_to_file with the active conversation", () => {

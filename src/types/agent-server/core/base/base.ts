@@ -1,5 +1,6 @@
 import { AUTOMATION_FORM_UPDATE_ACTION_KIND } from "#/constants/automation-form";
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
+import { CODE_CRITIQUE_ACTION_KIND } from "#/constants/code-critique";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
 import { CONNECT_DISCORD_ACTION_KIND } from "#/constants/discord";
 import { REQUEST_SECRET_ACTION_KIND } from "#/constants/secret-request";
@@ -46,7 +47,8 @@ type ActionEventType =
   | typeof AUTOMATION_FORM_UPDATE_ACTION_KIND
   | typeof LAUNCH_CHILD_CONVERSATION_ACTION_KIND
   | typeof REQUEST_SECRET_ACTION_KIND
-  | typeof CONNECT_DISCORD_ACTION_KIND;
+  | typeof CONNECT_DISCORD_ACTION_KIND
+  | typeof CODE_CRITIQUE_ACTION_KIND;
 type ObservationEventType =
   | `${ObservationOnlyType}Observation`
   | `${EventType}Observation`

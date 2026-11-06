@@ -32,9 +32,14 @@ When to call (pick the most specific option that matches your last action):
   small scripts like a hello-world bash file) →
     command="navigate_to_file", path=<workspace-relative path of that file>
 
-* You generated an HTML page, image, SVG, PDF, markdown report, or other
-  previewable artifact →
+* You generated a UI file or other previewable artifact →
     command="show_preview", path=<that file>
+    Opens the Preview tab, which renders HTML, SVG, Android XML layouts
+    (res/layout/*.xml), Jetpack Compose (.kt) and markdown. XML layouts and
+    Compose are shown as an approximate structural preview (hierarchy,
+    orientation, text) with a note listing anything it could not model, so
+    call it to check a UI's structure — not for pixel-accurate output.
+    Any other file falls back to the Files tab.
 
 * You finished editing multiple files in one logical step →
     command="open_tab", tab="files"

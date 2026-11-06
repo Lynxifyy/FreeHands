@@ -16,6 +16,7 @@ export const CONVERSATION_TAB_LABEL_KEYS: Record<ConversationTab, I18nKey> = {
   commits: I18nKey.DIFF_VIEWER$COMMITS,
   planner: I18nKey.COMMON$PLANNER,
   tasklist: I18nKey.COMMON$TASK_LIST,
+  preview: I18nKey.COMMON$PREVIEW,
   terminal: I18nKey.COMMON$TERMINAL,
   browser: I18nKey.COMMON$BROWSER,
   usage: I18nKey.COMMON$USAGE,

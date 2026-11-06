@@ -1,6 +1,7 @@
 import { CHILD_CONVERSATION_RESULT_PREFIX } from "#/constants/child-conversation";
 import { DISCORD_CONNECT_RESULT_PREFIX } from "#/constants/discord";
 import { SECRET_REQUEST_RESULT_PREFIX } from "#/constants/secret-request";
+import { CODE_CRITIQUE_RESULT_PREFIX } from "#/constants/code-critique";
 import { MessageEvent, OpenHandsEvent } from "#/types/agent-server/core";
 import {
   isActionEvent,
@@ -53,15 +54,16 @@ export const isCorrectiveNudge = (event: MessageEvent): boolean =>
   event.source === "environment" &&
   (userMessageText(event)?.startsWith(CORRECTIVE_NUDGE_PREFIX) ?? false);
 
-// The frontend posts the outcome of a `launch_child_conversation` or
-// `request_secret` call back as a `user` message because client tools have no
-// result channel (see `services/child-conversation-launch.ts` and
-// `services/secret-request.ts`). It is a JSON payload addressed to the agent,
-// which relays the outcome in its own reply, so the raw message does not
-// belong in the chat.
+// The frontend posts the outcome of a `launch_child_conversation`,
+// `request_secret` or `code_critique` call back as a `user` message because
+// client tools have no result channel (see `services/child-conversation-launch.ts`,
+// `services/secret-request.ts` and `services/code-critique/handle.ts`). It is a
+// JSON payload addressed to the agent, which relays the outcome in its own
+// reply, so the raw message does not belong in the chat.
 const CLIENT_TOOL_RESULT_PREFIXES = [
   CHILD_CONVERSATION_RESULT_PREFIX,
   SECRET_REQUEST_RESULT_PREFIX,
+  CODE_CRITIQUE_RESULT_PREFIX,
   DISCORD_CONNECT_RESULT_PREFIX,
 ];
 

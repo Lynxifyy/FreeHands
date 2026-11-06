@@ -51,6 +51,7 @@ describe("the command menu settings group", () => {
       "condenser-settings",
       "agent-context-settings",
       "verification-settings",
+      "code-tools-settings",
       "app-settings",
       "secrets-settings",
     ]);

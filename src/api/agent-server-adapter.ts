@@ -70,6 +70,7 @@ import {
 } from "./launch-child-conversation-client-tool";
 import { AUTOMATION_FORM_UPDATE_CLIENT_TOOL } from "./automation-form-client-tool";
 import { REQUEST_SECRET_CLIENT_TOOL } from "./request-secret-client-tool";
+import { CODE_CRITIQUE_CLIENT_TOOL } from "./code-critique-client-tool";
 import { CONNECT_DISCORD_CLIENT_TOOL } from "./connect-discord-client-tool";
 import {
   buildPlanPath,
@@ -1399,6 +1400,7 @@ export function buildStartConversationRequest(
             CANVAS_UI_CLIENT_TOOL,
             LAUNCH_CHILD_CONVERSATION_CLIENT_TOOL,
             REQUEST_SECRET_CLIENT_TOOL,
+            CODE_CRITIQUE_CLIENT_TOOL,
             CONNECT_DISCORD_CLIENT_TOOL,
             ...(options.automationSetup
               ? [AUTOMATION_FORM_UPDATE_CLIENT_TOOL]

@@ -4,6 +4,7 @@ import {
   LEGACY_CANVAS_UI_TOOL_NAME,
 } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
+import { CODE_CRITIQUE_TOOL_NAME } from "#/constants/code-critique";
 import { CONNECT_DISCORD_TOOL_NAME } from "#/constants/discord";
 import { REQUEST_SECRET_TOOL_NAME } from "#/constants/secret-request";
 
@@ -24,6 +25,7 @@ import {
   CanvasUIAction,
   LaunchChildConversationAction,
   RequestSecretAction,
+  CodeCritiqueAction,
   ConnectDiscordAction,
 } from "./core";
 import {
@@ -240,6 +242,12 @@ export const isRequestSecretActionEvent = (
   event: OpenHandsEvent,
 ): event is ActionEvent<RequestSecretAction> =>
   isActionEvent(event) && event.tool_name === REQUEST_SECRET_TOOL_NAME;
+
+/** Type guard for code-critique tool ActionEvents. */
+export const isCodeCritiqueActionEvent = (
+  event: OpenHandsEvent,
+): event is ActionEvent<CodeCritiqueAction> =>
+  isActionEvent(event) && event.tool_name === CODE_CRITIQUE_TOOL_NAME;
 
 /**
  * Type guard for connect-discord tool ActionEvents.
