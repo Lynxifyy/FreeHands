@@ -1,6 +1,7 @@
 import { AUTOMATION_FORM_UPDATE_ACTION_KIND } from "#/constants/automation-form";
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
+import { CODE_CRITIQUE_ACTION_KIND } from "#/constants/code-critique";
 import { REQUEST_SECRET_ACTION_KIND } from "#/constants/secret-request";
 import { ActionBase } from "./base";
 import { TaskItem } from "./common";
@@ -366,6 +367,19 @@ export interface RequestSecretAction extends ActionBase<
   reason?: string | null;
 }
 
+/**
+ * Request for a static review of code, emitted over the existing WebSocket
+ * and intercepted by handleCodeCritiqueAction. Carries either a workspace
+ * `path` or inline `code`; the analyzer never executes what it reads.
+ */
+export interface CodeCritiqueAction extends ActionBase<
+  typeof CODE_CRITIQUE_ACTION_KIND
+> {
+  path?: string | null;
+  code?: string | null;
+  language?: string | null;
+}
+
 export type Action =
   | MCPToolAction
   | FinishAction
@@ -394,4 +408,5 @@ export type Action =
   | CanvasUIAction
   | AutomationFormUpdateAction
   | LaunchChildConversationAction
-  | RequestSecretAction;
+  | RequestSecretAction
+  | CodeCritiqueAction;

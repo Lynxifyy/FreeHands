@@ -185,3 +185,76 @@ describe("useTaskList", () => {
     expect(result.current.hasTaskList).toBe(false);
   });
 });
+
+describe("useTaskList progress", () => {
+  it("reports counts, percent and the current task", () => {
+    const tasks = [
+      { title: "Done", notes: "", status: "done" as const },
+      { title: "Doing", notes: "", status: "in_progress" as const },
+      { title: "Later", notes: "", status: "todo" as const },
+      { title: "Also later", notes: "", status: "todo" as const },
+    ];
+    const event = createTaskTrackerObservation("1", "plan", tasks);
+    useEventStore.setState({
+      events: [event],
+      eventIds: new Set(["1"]),
+      uiEvents: [event],
+    });
+
+    const { result } = renderHook(() => useTaskList());
+
+    expect(result.current.progress).toEqual({
+      total: 4,
+      done: 1,
+      inProgress: 1,
+      todo: 2,
+      percent: 25,
+      currentTaskId: "2",
+    });
+  });
+
+  it("reports zeroed progress for an empty list", () => {
+    const { result } = renderHook(() => useTaskList());
+
+    expect(result.current.progress).toEqual({
+      total: 0,
+      done: 0,
+      inProgress: 0,
+      todo: 0,
+      percent: 0,
+      currentTaskId: null,
+    });
+  });
+
+  it("rounds the percent to the nearest whole number", () => {
+    const tasks = [
+      { title: "A", notes: "", status: "done" as const },
+      { title: "B", notes: "", status: "done" as const },
+      { title: "C", notes: "", status: "todo" as const },
+    ];
+    const event = createTaskTrackerObservation("1", "plan", tasks);
+    useEventStore.setState({
+      events: [event],
+      eventIds: new Set(["1"]),
+      uiEvents: [event],
+    });
+
+    const { result } = renderHook(() => useTaskList());
+
+    expect(result.current.progress.percent).toBe(67);
+  });
+
+  it("has no current task when nothing is in progress", () => {
+    const tasks = [{ title: "A", notes: "", status: "done" as const }];
+    const event = createTaskTrackerObservation("1", "plan", tasks);
+    useEventStore.setState({
+      events: [event],
+      eventIds: new Set(["1"]),
+      uiEvents: [event],
+    });
+
+    const { result } = renderHook(() => useTaskList());
+
+    expect(result.current.progress.currentTaskId).toBeNull();
+  });
+});

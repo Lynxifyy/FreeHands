@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import TaskListTab from "#/routes/task-list-tab";
 import { useEventStore } from "#/stores/use-event-store";
@@ -11,6 +12,10 @@ vi.mock("react-i18next", () => ({
       const translations: Record<string, string> = {
         COMMON$NO_TASKS: "No tasks yet",
         TASK_TRACKING_OBSERVATION$TASK_NOTES: "Notes",
+        TASK_LIST$PROGRESS: "done of total",
+        TASK_LIST$CURRENT: "In progress",
+        TASK_LIST$COMPLETED_SECTION: "Completed",
+        TASK_LIST$TOGGLE_COMPLETED: "Toggle completed tasks",
       };
       return translations[key] || key;
     },
@@ -175,5 +180,59 @@ describe("TaskListTab", () => {
 
     const main = screen.getByRole("main");
     expect(main).toBeInTheDocument();
+  });
+});
+
+describe("TaskListTab progress and grouping", () => {
+  it("shows the progress count and percent", () => {
+    setTasks([
+      { id: "1", title: "A", status: "done" },
+      { id: "2", title: "B", status: "in_progress" },
+      { id: "3", title: "C", status: "todo" },
+      { id: "4", title: "D", status: "todo" },
+    ]);
+
+    render(<TaskListTab />);
+
+    expect(screen.getByTestId("task-list-count")).toHaveTextContent(
+      "done of total",
+    );
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "25",
+    );
+  });
+
+  it("calls out the in-progress task as the current one", () => {
+    setTasks([
+      { id: "1", title: "Active", status: "in_progress" },
+      { id: "2", title: "Later", status: "todo" },
+    ]);
+
+    render(<TaskListTab />);
+
+    const current = screen.getByText("Active").closest("[data-current]");
+    expect(current).toHaveAttribute("data-current", "true");
+    expect(screen.getByText("In progress")).toBeInTheDocument();
+  });
+
+  it("collapses and expands the completed section", async () => {
+    const user = userEvent.setup();
+    setTasks([
+      { id: "1", title: "Finished", status: "done" },
+      { id: "2", title: "Ongoing", status: "in_progress" },
+    ]);
+
+    render(<TaskListTab />);
+
+    expect(screen.getByTestId("task-list-completed")).toBeInTheDocument();
+    expect(screen.getByText("Finished")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("task-list-toggle-completed"));
+
+    expect(screen.queryByTestId("task-list-completed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Finished")).not.toBeInTheDocument();
+    // Active work stays visible.
+    expect(screen.getByText("Ongoing")).toBeInTheDocument();
   });
 });

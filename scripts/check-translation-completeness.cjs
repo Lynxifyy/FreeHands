@@ -74,6 +74,12 @@ const IDENTICAL_VALUE_ALLOWLIST = new Set([
   'SETUP$REPOSITORY_PLACEHOLDER',
   'VSCODE$TITLE',
   'WORKSPACE$JUPYTER_TAB_LABEL',
+  // UI Preview format badges: proper nouns / product names, identical in every language.
+  'UI_PREVIEW$FORMAT_HTML',
+  'UI_PREVIEW$FORMAT_SVG',
+  'UI_PREVIEW$FORMAT_XML',
+  'UI_PREVIEW$FORMAT_COMPOSE',
+  'UI_PREVIEW$FORMAT_MARKDOWN',
 ]);
 
 // Extract the language codes from the AvailableLanguages array in the i18n index file

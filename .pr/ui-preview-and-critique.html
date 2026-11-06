@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UI Preview, code_critique and code tools — design</title>
+<style>
+  :root { --ink:#16181d; --muted:#5b6472; --line:#e3e6ec; --bg:#fbfbfd;
+          --code:#f4f5f8; --accent:#2f6f4f; --warn:#8a4b1f; --danger:#b4453a; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2.5rem 1.5rem 5rem; background:var(--bg); color:var(--ink);
+         font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  main { max-width: 62rem; margin:0 auto; }
+  h1 { font-size:1.9rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  h2 { font-size:1.25rem; margin:2.6rem 0 .7rem; padding-bottom:.35rem; border-bottom:1px solid var(--line); }
+  h3 { font-size:1.02rem; margin:1.6rem 0 .5rem; }
+  p, li { color:#22252c; }
+  .lede { color:var(--muted); font-size:1.03rem; margin:0 0 1.4rem; }
+  code, pre { font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  code { background:var(--code); padding:.1rem .3rem; border-radius:3px; font-size:.88em; }
+  pre { background:var(--code); border:1px solid var(--line); border-radius:6px;
+        padding:.85rem 1rem; overflow-x:auto; font-size:.82rem; line-height:1.5; }
+  table { border-collapse:collapse; width:100%; margin:.6rem 0 1rem; font-size:.9rem; }
+  th, td { text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
+  @media (max-width:760px){ .cols { grid-template-columns:1fr; } }
+  .panel { border:1px solid var(--line); border-radius:8px; padding:.85rem 1rem; background:#fff; }
+  .panel h3 { margin-top:0; }
+  .before { border-left:3px solid var(--danger); }
+  .after { border-left:3px solid var(--accent); }
+  .note { border-left:3px solid var(--warn); background:#fdf7f1; padding:.7rem .9rem; border-radius:0 6px 6px 0; }
+  .ok { color:var(--accent); font-weight:600; }
+  ul { padding-left:1.15rem; }
+  .muted { color:var(--muted); font-size:.88rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>UI Preview, <code>code_critique</code>, and code tools</h1>
+<p class="lede">Three additions to Agent Canvas: a right-side drawer tab that renders the UI a
+coding agent just produced, a client tool that tells the agent "that won't work / that's wrong /
+that's incomplete", and a settings page for both.</p>
+
+<h2>What this PR is</h2>
+<p>All three ride machinery that already exists in Canvas &mdash; the drawer tab registry and the
+client-defined tool contract &mdash; so nothing new is invented on the wire. The only new surfaces
+are one tab, one client tool, one settings page, and the pure renderers/analyzers behind them.</p>
+
+<table>
+  <tr><th>Area</th><th>New code</th><th>Wired into</th></tr>
+  <tr><td>UI Preview tab</td><td><code>src/services/ui-preview/</code>, <code>src/stores/ui-preview-store.ts</code>, <code>src/routes/preview-tab.tsx</code></td><td><code>ConversationTab</code>, tab bar, tabs menu, <code>TAB_CONFIG</code>, tab sanitizer, <code>canvas_ui</code> allow-list</td></tr>
+  <tr><td><code>code_critique</code> tool</td><td><code>src/services/code-critique/</code>, <code>src/api/code-critique-client-tool.ts</code></td><td><code>client_tools</code> in the adapter, WS dispatch, type guards, action-title pipeline, visualizer registry, hidden result prefixes</td></tr>
+  <tr><td>Code tools settings</td><td><code>src/stores/code-tools-settings-store.ts</code>, <code>src/routes/code-tools-settings.tsx</code></td><td>settings nav, route table, command menu, and the two consumers</td></tr>
+</table>
+
+<h2>1. The UI Preview tab</h2>
+
+<p>A coding agent writes HTML, SVG, Android XML layouts and Jetpack Compose all day, but Canvas
+could only show those as source. The Preview tab renders them.</p>
+
+<div class="cols">
+  <div class="panel before">
+    <h3>Before</h3>
+    <p>HTML/SVG got a rich preview <em>inside the Files tab</em>. XML layouts and Compose had no
+    preview at all &mdash; you read the markup. The agent's <code>show_preview</code> just selected
+    the file in Files.</p>
+  </div>
+  <div class="panel after">
+    <h3>After</h3>
+    <p>A dedicated <strong>Preview</strong> tab renders every UI format, with a format badge, the
+    path, auto-refresh, refresh and open-in-new-tab. <code>show_preview</code> routes UI files here;
+    everything else still lands on Files.</p>
+  </div>
+</div>
+
+<h3>Format detection</h3>
+<p><code>detectUiPreviewFormat(path, content)</code> is extension-first for the unambiguous cases
+and content-aware for the two that share an extension:</p>
+<pre>html / htm          -&gt; html
+svg                 -&gt; svg
+md / markdown       -&gt; markdown
+xml                 -&gt; xml
+kt / kts            -&gt; compose  (only when @Composable / setContent is present)
+otherwise           -&gt; unknown  (no preview; stays on Files)</pre>
+<p>The dispatcher needs the answer <em>before</em> reading the file, so
+<code>previewFormatForPath(path)</code> resolves from the path alone and treats a <code>.kt</code>
+as Compose &mdash; the agent only previews Kotlin it knows is UI. The tab re-runs content-aware
+detection once it has the body.</p>
+
+<h3>Rendering: real for HTML, approximate for XML/Compose</h3>
+<table>
+  <tr><th>Format</th><th>Renderer</th><th>Fidelity</th></tr>
+  <tr><td>HTML</td><td>pass-through into a sandboxed iframe (full document untouched, fragment wrapped)</td><td>faithful</td></tr>
+  <tr><td>SVG</td><td>wrapped in a centering document</td><td>faithful</td></tr>
+  <tr><td>XML layout</td><td><code>xml-layout-transform</code>: containers/widgets &rarr; flexbox, <code>@string</code> resolution</td><td>structural, approximate</td></tr>
+  <tr><td>Compose</td><td><code>compose-transform</code>: a narrow Kotlin DSL parser &rarr; flexbox</td><td>structural, approximate</td></tr>
+  <tr><td>Markdown</td><td>escaped preformatted text</td><td>literal</td></tr>
+</table>
+
+<p>The two transformers never silently drop a node: anything they cannot model becomes a labelled
+placeholder, and every such node is listed in a warning block above the preview. So an approximate
+render is never mistaken for pixel-accurate output.</p>
+
+<pre>// compose-transform output for:
+//   @Composable fun X() { Column { Text("hi") } }
+&lt;div class="oh-compose-container" data-compose-type="Column"
+     style="display:flex;flex-direction:column;box-sizing:border-box"&gt;
+  &lt;div class="oh-compose-text" style="box-sizing:border-box"&gt;hi&lt;/div&gt;
+&lt;/div&gt;</pre>
+
+<div class="note">
+<strong>Security.</strong> Every preview renders in <code>&lt;iframe sandbox&gt;</code> with no
+<code>allow-same-origin</code>, so previewed markup cannot reach Canvas state, cookies or the
+network through the parent. HTML is not sanitized (that would break fidelity); the sandbox is the
+boundary. Scripts stay disabled unless the user opts in on the Code tools page, and even then the
+sandbox is not relaxed.
+</div>
+
+<h3>State ownership</h3>
+<p><code>useUiPreviewStore</code> is the single owner of the preview target, keyed by conversation
+so a preview never leaks between conversations. It holds the path, the format, a refresh token and
+an auto-refresh flag. The tab composes that token with the existing workspace mutation counter, so
+agent edits re-render the preview exactly like the Files tab already does.</p>
+
+<h2>2. <code>code_critique</code>: "that won't work / that's wrong / that's incomplete"</h2>
+
+<p>Canvas already registers client-defined tools the browser answers
+(<code>canvas_ui_control</code>, <code>launch_child_conversation</code>, <code>request_secret</code>).
+This adds a fourth: a pure static review the agent can ask for before it declares itself done.</p>
+
+<div class="cols">
+  <div class="panel before">
+    <h3>Before</h3>
+    <p>The agent finished a UI file and moved on. Malformed markup, unbalanced braces, a Compose
+    call outside <code>@Composable</code>, or a leftover <code>TODO()</code> only surfaced later
+    &mdash; at build time or never.</p>
+  </div>
+  <div class="panel after">
+    <h3>After</h3>
+    <p>The agent calls <code>code_critique</code> on the file and gets a verdict plus line-numbered
+    issues, and acts on them in the same turn.</p>
+  </div>
+</div>
+
+<h3>Analyzers (pure, synchronous, no execution, no network)</h3>
+<table>
+  <tr><th>Language</th><th>Rules</th></tr>
+  <tr><td>HTML</td><td>unclosed / mismatched / unexpected close tags, <code>img</code> without <code>alt</code>, button without an accessible name</td></tr>
+  <tr><td>Android XML</td><td>well-formedness, missing <code>layout_width</code> / <code>layout_height</code></td></tr>
+  <tr><td>Kotlin / Compose</td><td>unbalanced braces/parens, Compose UI without an <code>androidx.compose</code> import, a composable call in a function not marked <code>@Composable</code>, <code>TODO()</code></td></tr>
+  <tr><td>Generic</td><td><code>TODO</code>/<code>FIXME</code> markers, not-implemented throws, <code>pass</code>-only bodies</td></tr>
+</table>
+
+<p>Each finding carries a stable rule id, a severity (<code>error</code> / <code>warning</code> /
+<code>info</code>), a category, an optional line and a hint. The verdict is <code>fail</code> on any
+error, <code>warn</code> on any warning, else <code>pass</code>.</p>
+
+<pre>{ "verdict": "fail",
+  "summary": "Found 2 issues, including at least one error that will not work.",
+  "language": "html",
+  "issues": [ { "rule": "html/unclosed-tag", "severity": "error",
+                "category": "structure", "line": 1,
+                "message": "&lt;div&gt; is never closed.",
+                "hint": "Add the matching &lt;/div&gt;." } ] }</pre>
+
+<h3>Request / result flow</h3>
+<p>It reuses the existing client-tool contract exactly: registered in the adapter's
+<code>client_tools</code> array, matched by a <code>tool_name</code> type guard in the WebSocket
+context, handled by <code>handleCodeCritiqueAction</code>, and answered by posting a
+<code>[code-critique]</code> user message (which the chat hides, like the other client-tool
+results). A replayed call is claimed once via <code>claimClientToolCall</code>. The tool takes a
+workspace-relative <code>path</code> (read through the runtime file client, cloud and local) or
+inline <code>code</code>.</p>
+
+<p class="muted">The agent-server caches client-tool schemas by name for the life of the process, so
+a long-running dev server needs a restart before new conversations pick up a changed schema.</p>
+
+<h2>3. Code tools settings</h2>
+
+<p>The two features have options, so they get one page and one owner instead of hardcoded
+defaults.</p>
+
+<table>
+  <tr><th>Setting</th><th>Values</th><th>Read by</th></tr>
+  <tr><td>Critique strictness</td><td>relaxed (errors only) / normal (warnings + errors) / strict (adds notes)</td><td><code>handleCodeCritiqueAction</code> &rarr; <code>critiqueCode</code></td></tr>
+  <tr><td>Preview auto-refresh</td><td>on / off</td><td>the Preview tab's effective refresh token</td></tr>
+  <tr><td>Preview allow scripts</td><td>off / on</td><td>the Preview iframe's sandbox attribute</td></tr>
+</table>
+
+<p>These are frontend behaviour, not agent settings, so they persist locally
+(<code>code-tools-settings-store</code>) rather than going on the agent-server wire. The page lives
+at <code>/settings/code-tools</code>, is listed in the settings nav and the command menu, and has a
+Reset to defaults action.</p>
+
+<h2>4. Task list progress</h2>
+
+<p>The Task List tab was a flat list. It now opens with a labelled progress bar and a done/total
+count, calls out the in-progress task, and folds completed tasks into a collapsible section.
+<code>useTaskList</code> returns the derived <code>progress</code> (counts, percent, current task id)
+from a pure <code>computeTaskProgress</code> helper.</p>
+
+<h2>Compatibility and risk</h2>
+
+<table>
+  <tr><th>Concern</th><th>Handling</th></tr>
+  <tr><td>New tab id persisted in localStorage</td><td>Added to the tab union, the persisted-tab sanitizer, the <code>canvas_ui</code> allow-list and the label map. Unknown ids are still dropped on read.</td></tr>
+  <tr><td>New client tool changes the request payload</td><td>Registered alongside the existing tools; the adapter tests that assert the exact list were updated. Old conversations are unaffected.</td></tr>
+  <tr><td>Preview executes authored markup</td><td>Sandboxed iframe without <code>allow-same-origin</code>; scripts off by default; transformed formats are script-free by construction.</td></tr>
+  <tr><td>Approximate XML/Compose render</td><td>Explicit warning block listing every unmodeled node; the tool description tells the agent it is structural, not pixel-accurate.</td></tr>
+  <tr><td>New settings page</td><td>Local persistence only; no wire change, no migration needed (absent storage falls back to defaults).</td></tr>
+</table>
+
+<h2>Evidence</h2>
+<ul>
+  <li><code>npm test</code> &mdash; 852 files, 9227 passed, 1 skipped, 7 todo.</li>
+  <li><code>npm run lint</code> &mdash; 0 errors (692 pre-existing warnings, baseline 691).</li>
+  <li><code>npm run build</code> and <code>npm run build:lib</code> &mdash; both succeed.</li>
+  <li>New tests: format detection, both transformers, the srcdoc builder, the store, the panel, the
+  analyzers, the dispatch, the strictness wiring, the visualizer, the settings page and store, and
+  the task-list progress/grouping.</li>
+  <li><code>control-openhands map check</code> / <code>map coverage</code> &mdash; the F27 family
+  carries the new sub-features and recipes; no unmapped routes.</li>
+</ul>
+
+</main>
+</body>
+</html>

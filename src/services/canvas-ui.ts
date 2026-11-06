@@ -4,7 +4,9 @@ import {
   useConversationStore,
 } from "#/stores/conversation-store";
 import { useFilesTabStore } from "#/stores/files-tab-store";
+import { useUiPreviewStore } from "#/stores/ui-preview-store";
 import type { CanvasUIAction } from "#/types/agent-server/core";
+import { previewFormatForPath } from "#/services/ui-preview/format-detect";
 import { setConversationState } from "#/utils/conversation-local-storage";
 import { toFilesTabPath } from "#/utils/path-utils";
 
@@ -14,6 +16,7 @@ const VALID_TABS: ReadonlySet<ConversationTab> = new Set<ConversationTab>([
   "terminal",
   "planner",
   "tasklist",
+  "preview",
 ]);
 
 type PanelRevealListener = () => void;
@@ -81,14 +84,40 @@ export function handleCanvasUIAction(
   switch (action.command) {
     case "navigate_to_file":
     case "show_preview": {
-      navigateToTab("files", conversationId);
-      if (!action.path) return;
+      // `show_preview` on a file the UI Preview tab can render (HTML, SVG,
+      // XML layout, Compose, markdown) opens that tab so the user sees the
+      // rendered result; every other file — and `navigate_to_file` always —
+      // falls back to the Files tab, which is the raw-source surface.
+      if (!action.path) {
+        navigateToTab(
+          action.command === "show_preview" ? "preview" : "files",
+          conversationId,
+        );
+        return;
+      }
 
       const workingDir =
         ConversationService.getCurrentConversation()?.workspace?.working_dir;
       const path = toFilesTabPath(action.path, workingDir);
-      if (!path) return;
+      if (!path) {
+        navigateToTab(
+          action.command === "show_preview" ? "preview" : "files",
+          conversationId,
+        );
+        return;
+      }
 
+      const previewFormat =
+        action.command === "show_preview" ? previewFormatForPath(path) : null;
+      if (previewFormat && conversationId) {
+        useUiPreviewStore
+          .getState()
+          .setTarget(conversationId, { path, format: previewFormat });
+        navigateToTab("preview", conversationId);
+        return;
+      }
+
+      navigateToTab("files", conversationId);
       useFilesTabStore.getState().setSelectedPath(path, conversationId);
       return;
     }

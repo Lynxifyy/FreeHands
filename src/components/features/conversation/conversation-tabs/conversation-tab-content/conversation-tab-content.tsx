@@ -16,6 +16,7 @@ const CommitsTab = lazy(() => import("#/routes/commits-tab"));
 const BrowserTab = lazy(() => import("#/routes/browser-tab"));
 const PlannerTab = lazy(() => import("#/routes/planner-tab"));
 const TaskListTab = lazy(() => import("#/routes/task-list-tab"));
+const PreviewTab = lazy(() => import("#/routes/preview-tab"));
 const UsageTab = lazy(() => import("#/routes/usage-tab"));
 const Terminal = lazy(() => import("#/components/features/terminal/terminal"));
 
@@ -26,6 +27,7 @@ const TAB_CONFIG = {
   browser: { component: BrowserTab },
   terminal: { component: Terminal },
   planner: { component: PlannerTab },
+  preview: { component: PreviewTab },
   usage: { component: UsageTab },
 };
 
