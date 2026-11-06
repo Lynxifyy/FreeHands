@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CANVAS_UI_CLIENT_TOOL_NAME } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_TOOL_NAME } from "#/constants/child-conversation";
+import { CONNECT_DISCORD_TOOL_NAME } from "#/constants/discord";
 import { REQUEST_SECRET_TOOL_NAME } from "#/constants/secret-request";
 import { CODE_CRITIQUE_TOOL_NAME } from "#/constants/code-critique";
 import { DEFAULT_SETTINGS } from "#/services/settings";
@@ -750,6 +751,7 @@ describe("buildStartConversationRequest — agentProfileId path", () => {
       LAUNCH_CHILD_CONVERSATION_TOOL_NAME,
       REQUEST_SECRET_TOOL_NAME,
       CODE_CRITIQUE_TOOL_NAME,
+      CONNECT_DISCORD_TOOL_NAME,
     ]);
   });
 

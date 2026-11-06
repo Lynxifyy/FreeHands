@@ -213,4 +213,65 @@ class AgentBridgeTest {
         assertEquals(6, results.size)
         assertEquals(listOf(0, 1, 2, 2, 2, 2), seen)
     }
+
+    @Test
+    fun `continues after a failed action and lets the planner recover`() {
+        val dispatcher = ActionDispatcher(
+            executor = ActionExecutor { action ->
+                if (action is AgentAction.Tap) ActionResult.Failed("no target") else ActionResult.Success
+            },
+        )
+        val planner = Planner(
+            listOf(
+                AgentDecision("tap", AgentAction.Tap(1, 1)),
+                AgentDecision("type instead", AgentAction.TypeText("hi")),
+                AgentDecision("done", null, done = true),
+            ),
+        )
+        val bridge = AgentBridge(planner, dispatcher, observer = ::observation)
+
+        val history = bridge.run("recover from a failure")
+
+        // The failed tap does not end the run: the loop asks the planner again.
+        assertEquals(3, history.size)
+        assertTrue(history[0].actionResult is ActionResult.Failed)
+        assertTrue(history.last().decision.done)
+    }
+
+    @Test
+    fun `keeps the loop alive when the planner throws`() {
+        var calls = 0
+        val planner = AgentPlanner { _, _, _ ->
+            calls += 1
+            if (calls == 1) throw RuntimeException("model call blew up")
+            AgentDecision("recovered", null, done = true)
+        }
+        val dispatcher = ActionDispatcher(executor = ActionExecutor { ActionResult.Success })
+        val bridge = AgentBridge(planner, dispatcher, observer = ::observation)
+
+        val history = bridge.run("planner error")
+
+        assertEquals(2, history.size)
+        assertTrue(history.last().decision.done)
+    }
+
+    @Test
+    fun `aborts after repeated consecutive failures instead of running to the step limit`() {
+        val dispatcher = ActionDispatcher(
+            executor = ActionExecutor { ActionResult.Failed("always fails") },
+        )
+        val bridge = AgentBridge(
+            planner = { _, _, _ -> AgentDecision("try again", AgentAction.Tap(1, 1)) },
+            dispatcher = dispatcher,
+            observer = ::observation,
+            maxConsecutiveFailures = 3,
+        )
+
+        val history = bridge.run("never works", maxSteps = 20)
+
+        // Three failed steps plus the synthetic "done" step that closes the run,
+        // not the 20-step limit.
+        assertEquals(4, history.size)
+        assertTrue(history.last().decision.done)
+    }
 }

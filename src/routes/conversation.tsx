@@ -25,6 +25,7 @@ import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { useIsAuthed } from "#/hooks/query/use-is-authed";
 import { ConversationMain } from "#/components/features/conversation/conversation-main/conversation-main";
 import { SecretRequestModal } from "#/components/features/conversation/secret-request-modal";
+import { DiscordConnectModal } from "#/components/features/conversation/discord-connect-modal";
 import { ConversationMobilePanelPage } from "#/components/features/conversation/conversation-main/conversation-mobile-panel-page";
 import { ConversationOverviewDrawerProvider } from "#/components/features/conversation/conversation-overview-drawer-context";
 
@@ -215,6 +216,7 @@ function AppContent() {
           )}
         </div>
         <SecretRequestModal />
+        <DiscordConnectModal />
       </ConversationOverviewDrawerProvider>
     </EventHandler>
   );

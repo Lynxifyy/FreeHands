@@ -8,8 +8,20 @@
  * run inside the Android WebView.
  */
 
+interface CapacitorPluginRegistry {
+  FreeHandsUpdater?: {
+    getInstalledVersion: () => Promise<{ version: string }>;
+    downloadAndInstall: (options: { url: string }) => Promise<void>;
+    addListener: (
+      eventName: "downloadProgress",
+      listener: (data: { received: number; total: number }) => void,
+    ) => Promise<{ remove: () => void } | void> | { remove: () => void };
+  };
+}
+
 interface CapacitorRuntime {
   isNativePlatform?: () => boolean;
+  Plugins?: CapacitorPluginRegistry;
 }
 
 declare global {

@@ -147,6 +147,7 @@ export function SidebarRailBody({
               logoWidth={SIDEBAR_LOGO_WIDTH}
               logoHeight={SIDEBAR_LOGO_HEIGHT}
               logoClassName="max-w-none"
+              colorClassName="text-logo"
               className={cn(SIDEBAR_ICON_SLOT_CLASS, "overflow-visible")}
             />
           </div>

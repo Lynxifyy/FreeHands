@@ -25,6 +25,7 @@ import {
   initializeAutomationFormSession,
 } from "#/api/automation-form-session";
 import type { AutomationSetupKind } from "#/api/automation-setup-types";
+import { DISCORD_SETUP_PROMPT } from "#/constants/discord";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useNavigation } from "#/context/navigation-context";
 import { SearchInput } from "#/components/features/automations/search-input";
@@ -489,6 +490,17 @@ export default function AutomationsList() {
     navigate?.(`/automations/setup?draftId=${encodeURIComponent(draft.id)}`);
   };
 
+  // Discord is a guided setup: open the automation form pre-filled with the
+  // Discord prompt, which leads the agent to connect the bot and then build the
+  // server.
+  const handleDiscordSetup = () => {
+    initializeAutomationFormSession(PENDING_AUTOMATION_SETUP_ID, {
+      prompt: DISCORD_SETUP_PROMPT,
+      kind: "prompt",
+    });
+    navigate?.("/automations/setup");
+  };
+
   const handleTestDraft = (draft: AutomationDraftApiResponse) => {
     dispatchDraftMutation.mutate(draft.id, {
       onSuccess: () => {
@@ -735,6 +747,7 @@ export default function AutomationsList() {
           <AddAutomationMenu
             onAdd={startSetup}
             onImport={() => setIsImportOpen(true)}
+            onDiscord={handleDiscordSetup}
           />
         </div>
       </div>

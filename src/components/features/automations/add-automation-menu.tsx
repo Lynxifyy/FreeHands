@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { ChevronDown, FileUp, Plus } from "lucide-react";
+import { ChevronDown, FileUp, MessageCircle, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ContextMenuListItem } from "#/components/features/context-menu/context-menu-list-item";
 import { BrandButton } from "#/components/features/settings/brand-button";
@@ -11,12 +11,15 @@ import { KebabMenuItemContent } from "./kebab-menu-item-content";
 interface AddAutomationMenuProps {
   onAdd: () => void;
   onImport: () => void;
+  /** Open the Discord automation setup (connect the bot, build a server). */
+  onDiscord: () => void;
   isAddDisabled?: boolean;
 }
 
 export function AddAutomationMenu({
   onAdd,
   onImport,
+  onDiscord,
   isAddDisabled = false,
 }: AddAutomationMenuProps) {
   const { t } = useTranslation("openhands");
@@ -118,6 +121,19 @@ export function AddAutomationMenu({
             <KebabMenuItemContent
               icon={<FileUp className="size-4" aria-hidden />}
               label={t(I18nKey.AUTOMATIONS$IMPORT)}
+            />
+          </ContextMenuListItem>
+        </li>
+        <li>
+          <ContextMenuListItem
+            testId="automations-add-discord"
+            className="group"
+            onClick={() => closeAnd(onDiscord)}
+          >
+            <KebabMenuItemContent
+              icon={<MessageCircle className="size-4" aria-hidden />}
+              label={t(I18nKey.AUTOMATIONS$DISCORD)}
+              description={t(I18nKey.AUTOMATIONS$DISCORD_HINT)}
             />
           </ContextMenuListItem>
         </li>

@@ -12,6 +12,40 @@ export const FREE_OPENHANDS_MODELS = {
 } as const;
 
 /**
+ * Display labels for DeepSeek models. FreeHands is tuned for DeepSeek V4.1
+ * Flash for coding, so the picker shows a readable name instead of the raw
+ * routing id. OpenHands-hosted ids already have labels in
+ * {@link FREE_OPENHANDS_MODELS}, which wins, so they are not repeated here.
+ */
+export const DEEPSEEK_MODEL_LABELS: Readonly<Record<string, string>> = {
+  "deepseek/deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
+  "deepseek/deepseek-v4-flash": "DeepSeek V4 Flash",
+  "deepseek/deepseek-chat": "DeepSeek Chat",
+  "deepseek/deepseek-reasoner": "DeepSeek Reasoner",
+};
+
+/** The model FreeHands recommends for coding. */
+export const RECOMMENDED_DEEPSEEK_MODEL = "openhands/deepseek-v4.1-flash";
+
+/** True when `model` routes to a DeepSeek model (any provider prefix). */
+export function isDeepSeekModel(model: string | null | undefined): boolean {
+  if (!model) return false;
+  const last = model.split("/").pop()?.toLowerCase() ?? "";
+  return last.startsWith("deepseek");
+}
+
+/**
+ * A readable label for `model` when it is a known DeepSeek model, else null.
+ * Callers fall back to their own formatting (e.g. stripping the route prefix).
+ */
+export function deepSeekModelLabel(
+  model: string | null | undefined,
+): string | null {
+  if (!model) return null;
+  return DEEPSEEK_MODEL_LABELS[model] ?? null;
+}
+
+/**
  * Set of free ``provider/model`` ids. The frontend no longer hardcodes which
  * OpenHands models are free — the set is sourced from the backend model list
  * (DB-driven), the same channel that carries `verified`. See
@@ -88,6 +122,6 @@ export function formatModelPillLabel(
   const display =
     model in FREE_OPENHANDS_MODELS
       ? FREE_OPENHANDS_MODELS[model as keyof typeof FREE_OPENHANDS_MODELS]
-      : model;
+      : (deepSeekModelLabel(model) ?? model);
   return appendFreeSuffix(display, isFreeOpenHandsModel(model, freeModels));
 }

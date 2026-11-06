@@ -1,5 +1,6 @@
 import { CANVAS_UI_CLIENT_ACTION_KIND } from "#/constants/canvas-ui";
 import { LAUNCH_CHILD_CONVERSATION_ACTION_KIND } from "#/constants/child-conversation";
+import { CONNECT_DISCORD_ACTION_KIND } from "#/constants/discord";
 import { REQUEST_SECRET_ACTION_KIND } from "#/constants/secret-request";
 import { CODE_CRITIQUE_ACTION_KIND } from "#/constants/code-critique";
 import type { ActionEvent } from "#/types/agent-server/core";
@@ -145,6 +146,12 @@ export const getActionEventTitleDescriptor = (
         kind: "translation",
         key: "ACTION_MESSAGE$REQUEST_SECRET",
         values: { name: event.action.name },
+      };
+    case CONNECT_DISCORD_ACTION_KIND:
+      return {
+        kind: "translation",
+        key: "ACTION_MESSAGE$CONNECT_DISCORD",
+        values: {},
       };
     case CODE_CRITIQUE_ACTION_KIND:
       return {

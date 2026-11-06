@@ -64,6 +64,13 @@ class AgentBridge(
     private val metrics: AgentMetrics = AgentMetrics(),
     private val conversation: ConversationManager = ConversationManager(),
     private val maxSteps: Int = DEFAULT_MAX_STEPS,
+    /**
+     * Consecutive failed steps tolerated before the run stops. A single failure
+     * is normal (the screen moved, a tap missed); a run of them means the agent
+     * is stuck, and stopping with a recorded reason is better than burning the
+     * whole step budget. Zero or less disables the guard.
+     */
+    private val maxConsecutiveFailures: Int = DEFAULT_MAX_CONSECUTIVE_FAILURES,
 ) : AgentLoop {
 
     @Volatile
@@ -82,12 +89,46 @@ class AgentBridge(
         // An explicit call-site limit wins; otherwise the constructor value
         // applies, so a caller can bound a run without rebuilding the loop.
         val limit = if (maxSteps != DEFAULT_MAX_STEPS) maxSteps else this.maxSteps
+        // Counts steps that ended without a successful action. Reset on success
+        // so an occasional miss never accumulates into a false "stuck" verdict.
+        var consecutiveFailures = 0
 
         for (step in 1..limit.coerceAtLeast(1)) {
             if (cancelled) break
 
             val observation = observer()
-            val decision = planner.decide(goal, conversation.history(), observation)
+            // A planner that throws (a dead model route, a bad response) must
+            // not kill the run: record it, count it as a failed step, and let
+            // the loop continue so the next call can recover.
+            val decision = try {
+                planner.decide(goal, conversation.history(), observation)
+            } catch (error: Throwable) {
+                recorder?.record(
+                    SessionRecorder.EVENT_ERROR,
+                    JSONObject()
+                        .put("stage", "planner")
+                        .put("step", step)
+                        .put("message", error.message.orEmpty()),
+                )
+                consecutiveFailures += 1
+                val failed = AgentStepResult(
+                    step,
+                    AgentDecision(
+                        thought = "planner error: ${error.message.orEmpty()}",
+                        action = null,
+                        done = false,
+                    ),
+                    actionResult = ActionResult.Failed(error.message ?: "planner error"),
+                    verification = null,
+                )
+                conversation.append(failed)
+                results += failed
+                if (exceededFailureBudget(consecutiveFailures)) {
+                    results += stopAfterFailures(step, consecutiveFailures)
+                    break
+                }
+                continue
+            }
             val telemetry = planner.lastTelemetry()
             recorder?.record(
                 "agent_step",
@@ -127,6 +168,18 @@ class AgentBridge(
             val result = AgentStepResult(step, decision, actionResult, verification)
             conversation.append(result)
             results += result
+
+            // A denied or failed action is feedback for the planner, not a
+            // reason to end the run — unless it keeps happening.
+            consecutiveFailures = if (actionResult == ActionResult.Success) {
+                0
+            } else {
+                consecutiveFailures + 1
+            }
+            if (exceededFailureBudget(consecutiveFailures)) {
+                results += stopAfterFailures(step, consecutiveFailures)
+                break
+            }
         }
 
         val snapshot = metrics.snapshot()
@@ -137,6 +190,29 @@ class AgentBridge(
                 .put("metrics", snapshot.toJson()),
         )
         return results
+    }
+
+    private fun exceededFailureBudget(consecutiveFailures: Int): Boolean =
+        maxConsecutiveFailures > 0 && consecutiveFailures >= maxConsecutiveFailures
+
+    /**
+     * Closes the run with an explicit "done" step so the UI settles into a
+     * clear finished state with a reason, rather than showing a red error that
+     * looks like a crash.
+     */
+    private fun stopAfterFailures(step: Int, failures: Int): AgentStepResult {
+        val decision = AgentDecision(
+            thought = "Stopping after $failures failed steps in a row.",
+            action = null,
+            done = true,
+        )
+        recorder?.record(
+            "agent_stopped_on_failures",
+            JSONObject().put("step", step).put("consecutiveFailures", failures),
+        )
+        val result = AgentStepResult(step, decision, actionResult = null, verification = null)
+        conversation.append(result)
+        return result
     }
 
     /**
@@ -177,5 +253,12 @@ class AgentBridge(
 
     companion object {
         const val DEFAULT_MAX_STEPS = 25
+
+        /**
+         * Consecutive failed steps tolerated before the run stops with an
+         * explicit "done" reason. Five gives the planner room to try a few
+         * alternatives without letting a stuck agent burn the whole budget.
+         */
+        const val DEFAULT_MAX_CONSECUTIVE_FAILURES = 5
     }
 }

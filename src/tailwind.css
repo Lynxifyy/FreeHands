@@ -12,6 +12,10 @@
 @theme inline {
   --color-primary: var(--oh-color-primary);
   --color-logo: var(--oh-color-logo);
+  --color-discord: var(--oh-color-discord);
+  /* FreeHands thinking orb: the white circle's eyes blink and glance around. */
+  --animate-thinking-blink: thinking-blink 3.6s ease-in-out infinite;
+  --animate-thinking-look: thinking-look 6.5s ease-in-out infinite;
   --color-canvas-base: var(--oh-color-base);
   /* Keep color names distinct from font sizes such as text-base. */
   --color-on-primary: var(--oh-color-base);
@@ -84,8 +88,12 @@
 
 :root {
   color-scheme: dark;
-  --oh-color-primary: #c9b974;
-  --oh-color-logo: #cfb755;
+  /* FreeHands brand blue (was gold #c9b974). Drives primary buttons, badges
+     and the wordmark, so keep the primary/accent/logo trio on one hue. */
+  --oh-color-primary: #3b82f6;
+  --oh-color-logo: #60a5fa;
+  /* Discord's brand blurple, used by the connect menu. */
+  --oh-color-discord: #5865f2;
   --oh-color-base: var(--cool-grey-950);
   --oh-color-base-secondary: var(--cool-grey-925);
   --oh-color-danger: #e76a5e;
@@ -124,7 +132,7 @@
   --oh-scrollbar-hover: color-mix(in srgb, var(--cool-grey-400) 50%, transparent);
   --oh-default: var(--cool-grey-800);
   --oh-default-foreground: var(--cool-grey-100);
-  --oh-accent: #c9b974;
+  --oh-accent: #3b82f6;
   --oh-accent-foreground: var(--cool-grey-950);
   --oh-success: #a5e75e;
   --oh-success-foreground: var(--cool-grey-950);
@@ -621,6 +629,37 @@ button.extension-module-card-interactive {
   }
   100% {
     background-position: -200% 0%;
+  }
+}
+
+/* FreeHands thinking orb: a white circle whose eyes blink and glance around. */
+@keyframes thinking-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+  98% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes thinking-look {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-22%);
+  }
+  45% {
+    transform: translateX(22%);
+  }
+  70% {
+    transform: translateX(0);
   }
 }
 
