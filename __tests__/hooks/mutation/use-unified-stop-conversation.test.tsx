@@ -10,6 +10,7 @@ import { TOAST_OPTIONS } from "#/utils/custom-toast-handlers";
 
 const {
   displayErrorToastMock,
+  mockUseSettings,
   navigateMock,
   navigationState,
   patchConversationInCacheMock,
@@ -20,6 +21,7 @@ const {
   useTranslationMock,
 } = vi.hoisted(() => ({
   displayErrorToastMock: vi.fn(),
+  mockUseSettings: vi.fn(() => ({ data: { always_keep_sandbox_alive: false } })),
   navigateMock: vi.fn(),
   navigationState: { conversationId: "conversation-1" as string | null },
   patchConversationInCacheMock: vi.fn(),
@@ -50,6 +52,10 @@ vi.mock("#/context/navigation-context", () => ({
     conversationId: navigationState.conversationId,
     navigate: navigateMock,
   }),
+}));
+
+vi.mock("#/hooks/query/use-settings", () => ({
+  useSettings: () => mockUseSettings(),
 }));
 
 vi.mock("#/hooks/mutation/conversation-mutation-utils", () => ({
@@ -126,7 +132,9 @@ describe("useUnifiedPauseConversation", () => {
     expect(cancelQueries.mock.invocationCallOrder[0]).toBeLessThan(
       pauseConversationMock.mock.invocationCallOrder[0]!,
     );
-    expect(pauseConversationMock).toHaveBeenCalledWith("conversation-1");
+    expect(pauseConversationMock).toHaveBeenCalledWith("conversation-1", {
+      keepSandboxAlive: false,
+    });
     expect(toastDismissMock).toHaveBeenCalledWith("stop-toast");
     expect(toastSuccessMock).toHaveBeenCalledWith(
       `translated:${I18nKey.TOAST$CONVERSATION_STOPPED}`,
@@ -142,6 +150,32 @@ describe("useUnifiedPauseConversation", () => {
     );
     expect(navigateMock).toHaveBeenCalledWith("/conversations");
     expect(displayErrorToastMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the sandbox and its runtime URL when the keep-alive setting is on", async () => {
+    mockUseSettings.mockReturnValue({
+      data: { always_keep_sandbox_alive: true },
+    });
+    pauseConversationMock.mockResolvedValue({ success: true, keptAlive: true });
+    const { queryClient, result } = setup();
+
+    await act(async () => {
+      await result.current.mutateAsync({ conversationId: "conversation-1" });
+    });
+
+    expect(pauseConversationMock).toHaveBeenCalledWith("conversation-1", {
+      keepSandboxAlive: true,
+    });
+    // The runtime URL is preserved so a later resume connects to the live
+    // sandbox instead of waking a PAUSED one.
+    expect(patchConversationInCacheMock).toHaveBeenCalledWith(
+      queryClient,
+      "conversation-1",
+      {
+        execution_status: ExecutionStatus.PAUSED,
+      },
+    );
+    expect(navigateMock).toHaveBeenCalledWith("/conversations");
   });
 
   it("does not dismiss a missing toast or navigate away from another conversation", async () => {

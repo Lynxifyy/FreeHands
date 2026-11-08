@@ -42,14 +42,24 @@ const fetchConversationData = async (
 
 /**
  * Stop a running conversation.
- * - Cloud mode: Pauses the sandbox (waits for current LLM call to finish).
+ * - Cloud mode: Pauses the sandbox (waits for current LLM call to finish),
+ *   unless the "keep sandboxes alive" preference is on — then the sandbox is
+ *   left running so the workspace survives the stop.
  * - Local mode: Interrupts immediately (cancels in-flight requests).
  */
-export const pauseConversation = async (conversationId: string) => {
+export const pauseConversation = async (
+  conversationId: string,
+  options: { keepSandboxAlive?: boolean } = {},
+) => {
   const { conversationUrl, sessionApiKey, sandboxId } =
     await fetchConversationData(conversationId);
 
   if (getActiveBackend().backend.kind === "cloud") {
+    if (options.keepSandboxAlive) {
+      // The sandbox stays up; only the agent is stopped. A later resume is
+      // instantaneous because the runtime is never torn down.
+      return { success: true, keptAlive: true };
+    }
     if (!sandboxId) {
       throw new Error(
         `Cannot stop runtime: cloud conversation ${conversationId} has no sandbox_id.`,

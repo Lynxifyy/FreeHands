@@ -60,6 +60,10 @@ function AppSettingsForm() {
     soundNotificationsSwitchHasChanged,
     setSoundNotificationsSwitchHasChanged,
   ] = React.useState(false);
+  const [
+    keepSandboxAliveSwitchHasChanged,
+    setKeepSandboxAliveSwitchHasChanged,
+  ] = React.useState(false);
   const [gitUserNameHasChanged, setGitUserNameHasChanged] =
     React.useState(false);
   const [gitUserEmailHasChanged, setGitUserEmailHasChanged] =
@@ -112,6 +116,8 @@ function AppSettingsForm() {
       : formData.get("enable-analytics-switch")?.toString() === "on";
     const enableSoundNotifications =
       formData.get("enable-sound-notifications-switch")?.toString() === "on";
+    const alwaysKeepSandboxAlive =
+      formData.get("always-keep-sandbox-alive-switch")?.toString() === "on";
 
     const gitUserName =
       formData.get("git-user-name-input")?.toString() ||
@@ -125,6 +131,7 @@ function AppSettingsForm() {
         language,
         ...(!isCloudBackend && { user_consents_to_analytics: enableAnalytics }),
         enable_sound_notifications: enableSoundNotifications,
+        always_keep_sandbox_alive: alwaysKeepSandboxAlive,
         git_user_name: gitUserName,
         git_user_email: gitUserEmail,
         title_llm_profile: selectedTitleLlmProfile,
@@ -142,6 +149,7 @@ function AppSettingsForm() {
           setLanguageInputHasChanged(false);
           setAnalyticsSwitchHasChanged(false);
           setSoundNotificationsSwitchHasChanged(false);
+          setKeepSandboxAliveSwitchHasChanged(false);
           setGitUserNameHasChanged(false);
           setGitUserEmailHasChanged(false);
           setTitleLlmProfileInput(undefined);
@@ -174,6 +182,12 @@ function AppSettingsForm() {
     );
   };
 
+  const checkIfKeepSandboxAliveSwitchHasChanged = (checked: boolean) => {
+    setKeepSandboxAliveSwitchHasChanged(
+      checked !== !!settings?.always_keep_sandbox_alive,
+    );
+  };
+
   const checkIfGitUserNameHasChanged = (value: string) => {
     const currentValue = settings?.git_user_name;
     setGitUserNameHasChanged(value !== currentValue);
@@ -188,6 +202,7 @@ function AppSettingsForm() {
     !languageInputHasChanged &&
     !analyticsSwitchHasChanged &&
     !soundNotificationsSwitchHasChanged &&
+    !keepSandboxAliveSwitchHasChanged &&
     selectedTitleLlmProfile === storedTitleLlmProfile &&
     !gitUserNameHasChanged &&
     !gitUserEmailHasChanged;
@@ -236,6 +251,15 @@ function AppSettingsForm() {
             onToggle={checkIfSoundNotificationsSwitchHasChanged}
           >
             {t(I18nKey.SETTINGS$SOUND_NOTIFICATIONS)}
+          </SettingsSwitch>
+
+          <SettingsSwitch
+            testId="always-keep-sandbox-alive-switch"
+            name="always-keep-sandbox-alive-switch"
+            defaultIsToggled={!!settings.always_keep_sandbox_alive}
+            onToggle={checkIfKeepSandboxAliveSwitchHasChanged}
+          >
+            {t(I18nKey.SETTINGS$ALWAYS_KEEP_SANDBOX_ALIVE)}
           </SettingsSwitch>
 
           <GettingStartedChecklistSwitch />
