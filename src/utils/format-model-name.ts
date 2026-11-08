@@ -46,6 +46,24 @@ export function deepSeekModelLabel(
 }
 
 /**
+ * Label for the live thinking status (e.g. "DeepSeek V4.1 Flash is
+ * thinking…"). Returns null for a non-DeepSeek model so callers keep their
+ * default "Thinking" copy. Matches a known label by full id first, then by the
+ * route's last segment, so an OpenHands-hosted DeepSeek route still shows the
+ * product name; any other DeepSeek variant falls back to "DeepSeek".
+ */
+export function thinkingModelLabel(
+  model: string | null | undefined,
+): string | null {
+  if (!isDeepSeekModel(model)) return null;
+  const route = model!.split("/").pop() ?? "";
+  const byLastSegment = Object.entries(DEEPSEEK_MODEL_LABELS).find(
+    ([id]) => id.split("/").pop() === route,
+  )?.[1];
+  return deepSeekModelLabel(model) ?? byLastSegment ?? "DeepSeek";
+}
+
+/**
  * Set of free ``provider/model`` ids. The frontend no longer hardcodes which
  * OpenHands models are free — the set is sourced from the backend model list
  * (DB-driven), the same channel that carries `verified`. See

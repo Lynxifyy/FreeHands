@@ -715,7 +715,10 @@ export function ChatInterface({
                       (curAgentState === AgentState.RUNNING ||
                         isPlanningAgentRunning) && (
                         <div className="pointer-events-none absolute inset-x-9 bottom-0 flex justify-center">
-                          <TypingIndicator events={allConversationEvents} />
+                          <TypingIndicator
+                            events={allConversationEvents}
+                            model={activeConversation?.llm_model ?? null}
+                          />
                         </div>
                       )
                     )}

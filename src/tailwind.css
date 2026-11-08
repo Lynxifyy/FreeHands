@@ -16,6 +16,11 @@
   /* FreeHands thinking orb: the white circle's eyes blink and glance around. */
   --animate-thinking-blink: thinking-blink 3.6s ease-in-out infinite;
   --animate-thinking-look: thinking-look 6.5s ease-in-out infinite;
+  /* Oli's blue robot head: bob + scan while thinking, a faster typing beat
+     while it writes code. */
+  --animate-oli-think: oli-think 2.6s ease-in-out infinite;
+  --animate-oli-code: oli-code 1.1s ease-in-out infinite;
+  --animate-oli-antenna: oli-antenna 1.8s ease-in-out infinite;
   --color-canvas-base: var(--oh-color-base);
   /* Keep color names distinct from font sizes such as text-base. */
   --color-on-primary: var(--oh-color-base);
@@ -660,6 +665,41 @@ button.extension-module-card-interactive {
   }
   70% {
     transform: translateX(0);
+  }
+}
+
+/* Oli's blue robot head: a gentle bob while thinking, a faster beat while it
+   writes code, and a blinking antenna light in both states. */
+@keyframes oli-think {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8%);
+  }
+}
+
+@keyframes oli-code {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-14%) rotate(-4deg);
+  }
+  75% {
+    transform: translateY(-14%) rotate(4deg);
+  }
+}
+
+@keyframes oli-antenna {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
   }
 }
 
