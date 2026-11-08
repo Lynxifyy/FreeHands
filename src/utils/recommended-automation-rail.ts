@@ -2,9 +2,19 @@ import {
   AUTOMATION_CATALOG,
   type RecommendedAutomation,
 } from "@openhands/extensions/automations";
+import { DISCORD_RECOMMENDED_AUTOMATION } from "#/constants/discord";
 import { getFeaturedAutomationIds } from "#/manifests/automation-interface";
 import { SETUP_REGISTRY } from "#/manifests/manifest-sources";
 import type { Automation } from "#/types/automation";
+
+/**
+ * The automations the host recommends. The published catalog plus the host's
+ * own entries (currently the Discord server automation), so a host feature is
+ * recommended exactly like a catalog one.
+ */
+export function getHostAutomationCatalog(): RecommendedAutomation[] {
+  return [...AUTOMATION_CATALOG, DISCORD_RECOMMENDED_AUTOMATION];
+}
 
 export function getAutomationsByPopularity(
   catalog: RecommendedAutomation[],
@@ -80,9 +90,9 @@ export function getRecommendedRailGroups(
   // Every catalog entry is offerable: one that declares no integration needs
   // nothing connected, and one that names an integration this host cannot
   // resolve stays visible so the drift is actionable rather than hidden.
-  const available = getAutomationsByPopularity(AUTOMATION_CATALOG).filter(
-    (entry) => !isCatalogAutomationAdded(entry, installed),
-  );
+  const available = getAutomationsByPopularity(
+    getHostAutomationCatalog(),
+  ).filter((entry) => !isCatalogAutomationAdded(entry, installed));
 
   return {
     proven: available.filter(isProvenAutomation),

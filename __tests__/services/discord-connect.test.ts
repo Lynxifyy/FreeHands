@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   CONNECT_DISCORD_ACTION_KIND,
+  DISCORD_BOT_TOKEN_SECRET_NAME,
   DISCORD_CONNECT_RESULT_PREFIX,
 } from "#/constants/discord";
 import {
   completeDiscordConnect,
   handleConnectDiscordAction,
 } from "#/services/discord-connect";
+import { SecretsService } from "#/api/secrets-service";
 import { useGoalStore } from "#/stores/goal-store";
 import {
   type DiscordConnectRequest,
@@ -23,6 +25,10 @@ vi.mock(
   "#/api/conversation-service/agent-server-conversation-service.api",
   () => ({ default: { sendMessage: mockSendMessage } }),
 );
+
+const createSecretSpy = vi
+  .spyOn(SecretsService, "createSecret")
+  .mockResolvedValue(undefined);
 
 const CONVERSATION_ID = "conversation-1";
 
@@ -127,6 +133,31 @@ describe("completeDiscordConnect", () => {
     await completeDiscordConnect(request, { connected: true, guildId: "42" });
 
     expect(mockSendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves a pasted bot token as the DISCORD_BOT_TOKEN secret", async () => {
+    await completeDiscordConnect(request, {
+      connected: true,
+      guildId: "42",
+      botToken: "secret-token-value",
+    });
+
+    expect(createSecretSpy).toHaveBeenCalledWith(
+      DISCORD_BOT_TOKEN_SECRET_NAME,
+      "secret-token-value",
+      "Discord bot token",
+    );
+    // The token never reaches the chat; only a mention of the secret name.
+    expect(reportedText()).not.toContain("secret-token-value");
+    expect(createSecretSpy.mock.lastCall?.[1]).toBe("secret-token-value");
+  });
+
+  it("keeps the original guidance when no token is pasted", async () => {
+    await completeDiscordConnect(request, { connected: true, guildId: "42" });
+
+    const result = reportedResult();
+    expect(result.guidance).toContain("DISCORD_BOT_TOKEN");
+    expect(createSecretSpy).not.toHaveBeenCalled();
   });
 
   it("stays quiet while a goal loop is active", async () => {

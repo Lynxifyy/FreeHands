@@ -76,6 +76,7 @@ describe("RecommendedAutomationsRail", () => {
       "linear-issue-to-gitlab-mr",
       "linear-issue-to-bitbucket-pr",
       "jira-issue-to-pr",
+      "discord",
       "jira-issue-to-gitlab-mr",
       "research-brief-writer",
       "jira-issue-to-bitbucket-pr",
@@ -139,6 +140,7 @@ describe("RecommendedAutomationsRail", () => {
           { name: "Linear issue to Bitbucket PR" },
           { name: "Jira issue to GitLab MR" },
           { name: "Jira issue to Bitbucket PR" },
+          { name: "Discord server" },
         ]}
         onSelect={vi.fn()}
       />,

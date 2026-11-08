@@ -23,6 +23,14 @@ import {
   isMcpInstallableEntry,
 } from "#/utils/mcp-marketplace-utils";
 import { InstallServerModal } from "#/components/features/mcp-page/install-server-modal";
+import {
+  PENDING_AUTOMATION_SETUP_ID,
+  initializeAutomationFormSession,
+} from "#/api/automation-form-session";
+import {
+  DISCORD_RECOMMENDED_AUTOMATION_ID,
+  DISCORD_SETUP_PROMPT,
+} from "#/constants/discord";
 import { useTracking } from "#/hooks/use-tracking";
 import {
   automationSetupPath,
@@ -146,6 +154,19 @@ export function RecommendedAutomationsLauncher({
         return;
       }
       launchInFlightRef.current = true;
+
+      // The host's own Discord entry is a guided setup (connect the bot, then
+      // build the server), like the Add-automation menu's Discord action: open
+      // the automation form pre-filled with the Discord prompt.
+      if (automation.id === DISCORD_RECOMMENDED_AUTOMATION_ID) {
+        initializeAutomationFormSession(PENDING_AUTOMATION_SETUP_ID, {
+          prompt: DISCORD_SETUP_PROMPT,
+          kind: "prompt",
+        });
+        navigate?.("/automations/setup");
+        onLaunched?.();
+        return;
+      }
 
       // An automation that ships a setup experience is configured from its own
       // form, so the answers are collected before anything is created. The rest

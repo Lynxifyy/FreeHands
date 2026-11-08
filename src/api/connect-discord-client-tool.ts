@@ -19,8 +19,10 @@ follow-up message starting with "${DISCORD_CONNECT_RESULT_PREFIX.trim()}". When
 it reports status "connected" it carries the guild_id to act on; use that id as
 the guild for every follow-up REST call.
 
-Authentication: the bot token is exposed to your environment as
-$${DISCORD_BOT_TOKEN_SECRET_NAME}. Send it as \`Authorization: Bot
+Authentication: the connect menu offers the user an optional field to paste the
+bot token, which is stored as the $${DISCORD_BOT_TOKEN_SECRET_NAME} secret. When
+that secret exists it is exposed to your environment; read it as
+$${DISCORD_BOT_TOKEN_SECRET_NAME} and send it as \`Authorization: Bot
 $${DISCORD_BOT_TOKEN_SECRET_NAME}\` against https://discord.com/api/v10. Never
 print or echo the token. If the follow-up says the bot is not connected, ask the
 user how they want to proceed instead of retrying on your own.`;
