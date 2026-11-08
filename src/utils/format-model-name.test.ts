@@ -5,6 +5,7 @@ import {
   deepSeekModelLabel,
   formatModelPillLabel,
   isDeepSeekModel,
+  thinkingModelLabel,
 } from "./format-model-name";
 
 describe("formatModelPillLabel", () => {
@@ -51,5 +52,26 @@ describe("DeepSeek model helpers", () => {
         label.includes("V4.1 Flash"),
       ),
     ).toBe(true);
+  });
+});
+
+describe("thinkingModelLabel", () => {
+  it("names a DeepSeek model for the live thinking status", () => {
+    expect(thinkingModelLabel(RECOMMENDED_DEEPSEEK_MODEL)).toBe(
+      "DeepSeek V4.1 Flash",
+    );
+    expect(thinkingModelLabel("deepseek/deepseek-reasoner")).toBe(
+      "DeepSeek Reasoner",
+    );
+  });
+
+  it("falls back to the product name for an unlisted DeepSeek variant", () => {
+    expect(thinkingModelLabel("openhands/deepseek-v9-turbo")).toBe("DeepSeek");
+  });
+
+  it("is null for a non-DeepSeek or missing model", () => {
+    expect(thinkingModelLabel("openai/gpt-5.6-sol")).toBeNull();
+    expect(thinkingModelLabel(null)).toBeNull();
+    expect(thinkingModelLabel(undefined)).toBeNull();
   });
 });

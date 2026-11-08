@@ -1,5 +1,6 @@
-import { Trans } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import type { OHEvent } from "#/stores/use-event-store";
+import { I18nKey } from "#/i18n/declaration";
 import {
   isACPToolCallEvent,
   isActionEvent,
@@ -16,9 +17,12 @@ import {
   getActionSummaryTitle,
   type EventTitleDescriptor,
 } from "#/components/conversation-events/chat/event-content-helpers/get-action-event-title";
+import { thinkingModelLabel } from "#/utils/format-model-name";
+import { deriveOliStatus } from "#/utils/oli-activity";
 import { MonoComponent } from "./mono-component";
 import { PathComponent } from "./path-component";
 import { ThinkingOrb } from "./thinking-orb";
+import { OliRobotHead } from "./oli-robot-head";
 
 const THINKING_ACTIVITY: EventTitleDescriptor = {
   kind: "translation",
@@ -121,33 +125,66 @@ export const deriveLiveActivity = (
 
 interface TypingIndicatorProps {
   readonly events: readonly OHEvent[];
+  /**
+   * Routing id of the active model, used for the model-aware status. Absent on
+   * the home page, where the chip still falls back to the generic "Thinking".
+   */
+  readonly model?: string | null;
 }
 
-export function TypingIndicator({ events }: TypingIndicatorProps) {
+/**
+ * Key `deriveLiveActivity` returns for a plain "agent is thinking" state (no
+ * concrete action in flight). Used to decide when the status should name the
+ * model instead of a bare "Thinking".
+ */
+const THINKING_KEY = "ACTION_MESSAGE$THINK";
+
+export function TypingIndicator({ events, model }: TypingIndicatorProps) {
+  const { t } = useTranslation("openhands");
   const activity = deriveLiveActivity(events);
+  const oliStatus = deriveOliStatus(events);
+  const modelLabel = thinkingModelLabel(model);
+
+  // While Oli is helping, the delegation itself is the live activity, so its
+  // generic task title is replaced by the combined status.
+  let text: string | null = null;
+  if (oliStatus) {
+    text = modelLabel
+      ? t(I18nKey.THINKING$OLI_AND_MODEL, { model: modelLabel })
+      : t(I18nKey.THINKING$OLI_AND_AGENT);
+  } else if (
+    activity.kind === "translation" &&
+    activity.key === THINKING_KEY &&
+    modelLabel
+  ) {
+    text = t(I18nKey.ACTION_MESSAGE$MODEL_THINKING, { model: modelLabel });
+  }
 
   return (
     <div
       className="flex min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text-secondary"
       data-testid="live-activity-chip"
+      data-oli-active={oliStatus ?? "false"}
       role="status"
       aria-live="polite"
     >
       <ThinkingOrb size={16} className="mr-0.5" />
+      {oliStatus && <OliRobotHead status={oliStatus} size={16} />}
       <span className="min-w-0 truncate">
-        {activity.kind === "text" ? (
-          activity.text
-        ) : (
-          <Trans
-            ns="openhands"
-            i18nKey={activity.key}
-            values={activity.values}
-            components={{
-              path: <PathComponent />,
-              cmd: <MonoComponent />,
-            }}
-          />
-        )}
+        {text ??
+          (activity.kind === "text" ? (
+            activity.text
+          ) : (
+            <Trans
+              ns="openhands"
+              i18nKey={activity.key}
+              values={activity.values}
+              components={{
+                path: <PathComponent />,
+                cmd: <MonoComponent />,
+              }}
+            />
+          ))}
       </span>
     </div>
   );

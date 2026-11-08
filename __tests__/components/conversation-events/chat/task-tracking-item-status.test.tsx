@@ -40,12 +40,12 @@ function createTask(overrides: Partial<TaskItemData> = {}): TaskItemData {
 
 describe("conversation task status display", () => {
   it.each([
-    ["todo", "todo-icon", false],
-    ["in_progress", "in-progress-icon", false],
-    ["done", "done-icon", true],
+    ["todo", "todo-icon", "text-[#ffffff]"],
+    ["in_progress", "in-progress-icon", "text-[#ffffff]"],
+    ["done", "done-icon", "text-success"],
   ] as const)(
     "renders the %s status with its matching icon and title treatment",
-    (status, iconTestId, isMuted) => {
+    (status, iconTestId, iconClass) => {
       const task = createTask({ status, title: `${status} task` });
 
       const { container } = render(<TaskItem task={task} />);
@@ -53,14 +53,14 @@ describe("conversation task status display", () => {
       expect(container.querySelector('[data-name="item"]')).toBeInTheDocument();
       const icon = screen.getByTestId(iconTestId);
       expect(icon).toBeInTheDocument();
+      expect(icon).toHaveClass(iconClass);
       const title = screen.getByText(`${status} task`);
       expect(title).toHaveClass("text-xs");
 
-      if (isMuted) {
-        expect(icon).toHaveClass("text-muted");
+      if (status === "done") {
+        // A completed task keeps its dimmed title but gets the green tick.
         expect(title).toHaveClass("text-muted");
       } else {
-        expect(icon).toHaveClass("text-[#ffffff]");
         expect(title).toHaveClass("text-contrast");
         expect(title).not.toHaveClass("text-muted");
       }
