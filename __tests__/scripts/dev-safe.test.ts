@@ -516,6 +516,11 @@ describe("buildAgentServerCommand", () => {
   );
   const SDK_GIT_REPO = defaults.sdkSource.gitRepo;
   const SDK_GIT_REF = defaults.sdkSource.gitRef;
+  const LITELLM_GIT_REPO = defaults.litellmSource.gitRepo;
+  const LITELLM_GIT_REF = defaults.litellmSource.gitRef;
+  // The fork-git modes install the pinned litellm fork after the workspace
+  // packages. Shared by both git and local-path branches.
+  const litellmWith = `git+${LITELLM_GIT_REPO}@${LITELLM_GIT_REF}`;
 
   it("defaults to the pinned SDK fork with all packages from the same ref", () => {
     const cmd = buildAgentServerCommand({});
@@ -537,6 +542,8 @@ describe("buildAgentServerCommand", () => {
       `${baseGitUrl}#subdirectory=openhands-workspace`,
       "--with",
       "posthog>=6,<7",
+      "--with",
+      litellmWith,
       "agent-server",
       "--import-modules",
       "canvas_ui_tool",
@@ -596,6 +603,8 @@ describe("buildAgentServerCommand", () => {
       `git+${SDK_GIT_REPO}@feature-branch#subdirectory=openhands-workspace`,
       "--with",
       "posthog>=6,<7",
+      "--with",
+      litellmWith,
       "agent-server",
       "--import-modules",
       "canvas_ui_tool",
@@ -619,6 +628,8 @@ describe("buildAgentServerCommand", () => {
       `git+${SDK_GIT_REPO}@abc1234#subdirectory=openhands-workspace`,
       "--with",
       "posthog>=6,<7",
+      "--with",
+      litellmWith,
       "agent-server",
       "--import-modules",
       "canvas_ui_tool",
@@ -640,6 +651,19 @@ describe("buildAgentServerCommand", () => {
     expect(cmd.args).not.toContain("openhands-agent-server==1.18.0");
   });
 
+  it("OH_LITELLM_VERSION opts out of the litellm fork to stock PyPI", () => {
+    const cmd = buildAgentServerCommand({ OH_LITELLM_VERSION: "1.93.0" });
+
+    expect(cmd.args).toContain("litellm==1.93.0");
+    expect(cmd.args).not.toContain(
+      `git+${LITELLM_GIT_REPO}@${LITELLM_GIT_REF}`,
+    );
+    // SDK fork still used; only the litellm source is overridden.
+    expect(cmd.args).toContain(
+      `git+${SDK_GIT_REPO}@${SDK_GIT_REF}#subdirectory=openhands-agent-server`,
+    );
+  });
+
   it("uses local path with editable workspace packages when OH_AGENT_SERVER_LOCAL_PATH is set", () => {
     const sdk = "/abs/path/to/software-agent-sdk";
     const cmd = buildAgentServerCommand({ OH_AGENT_SERVER_LOCAL_PATH: sdk });
@@ -657,6 +681,8 @@ describe("buildAgentServerCommand", () => {
       path.join(sdk, "openhands-workspace"),
       "--with",
       "posthog>=6,<7",
+      "--with",
+      litellmWith,
       "agent-server",
       "--import-modules",
       "canvas_ui_tool",

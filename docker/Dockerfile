@@ -81,7 +81,12 @@ ARG AGENT_SERVER_VERSION
 # values here keep a direct `docker build` on the same fork. Pass an empty
 # AGENT_SERVER_SDK_GIT_REF to keep the base image's stock SDK.
 ARG AGENT_SERVER_SDK_GIT_REPO="https://github.com/Lynxifyy/software-agent-sdk-2.0"
-ARG AGENT_SERVER_SDK_GIT_REF="d0da07dbd84cc9c9c38f81cf0c3da9c20b50568f"
+ARG AGENT_SERVER_SDK_GIT_REF="87d6cc8a61c2f17f6a092a3093ebff48eaf95a83"
+# litellm fork installed alongside the SDK so the DeepSeek V4/V4.1 model-map
+# entries FreeHands relies on are present. Mirrors config/defaults.json
+# (`litellmSource`). Pass an empty LITELLM_GIT_REF to keep stock PyPI litellm.
+ARG LITELLM_GIT_REPO="https://github.com/Lynxifyy/litellm-2.0"
+ARG LITELLM_GIT_REF="1c06cd8b3c49b943da9674c15949a818dd14b19c"
 ARG OPENHANDS_BUILD_GIT_SHA=unknown
 ARG OPENHANDS_BUILD_GIT_REF=unknown
 ARG VITE_BASE_PATH="/canvas"
@@ -138,6 +143,14 @@ RUN if [ -n "${AGENT_SERVER_SDK_GIT_REF}" ]; then \
         "${BASE_GIT_URL}#subdirectory=openhands-sdk" \
         "${BASE_GIT_URL}#subdirectory=openhands-tools" \
         "${BASE_GIT_URL}#subdirectory=openhands-workspace"; \
+    fi
+
+# The SDK reads litellm's model map to advertise model capabilities, so install
+# the litellm fork (the DeepSeek V4/V4.1 entries upstream still lacks) on top
+# of the agent-server base image's stock litellm.
+RUN if [ -n "${LITELLM_GIT_REF}" ]; then \
+      uv pip install --system --force-reinstall \
+        "git+${LITELLM_GIT_REPO}@${LITELLM_GIT_REF}"; \
     fi
 
 # Copy the frontend build output.

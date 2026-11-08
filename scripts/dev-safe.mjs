@@ -50,6 +50,13 @@ const DEFAULT_AGENT_SERVER_PACKAGE = SHARED_DEFAULTS.packages.agentServer;
 // config/defaults.json so the npm launcher and the Docker image agree.
 const AGENT_SERVER_GIT_REPO = SHARED_DEFAULTS.sdkSource.gitRepo;
 const DEFAULT_AGENT_SERVER_GIT_REF = SHARED_DEFAULTS.sdkSource.gitRef;
+// The litellm fork the app installs alongside the SDK. openhands-sdk consumes
+// litellm's model map to advertise model capabilities, and the fork carries the
+// DeepSeek V4/V4.1 entries (deepseek-v4.1-flash, deepseek-v4-flash-vision-exp)
+// FreeHands relies on that upstream still lacks. Pinned in config/defaults.json
+// so the npm launcher and the Docker image agree.
+const LITELLM_GIT_REPO = SHARED_DEFAULTS.litellmSource?.gitRepo;
+const DEFAULT_LITELLM_GIT_REF = SHARED_DEFAULTS.litellmSource?.gitRef;
 const LOCAL_AGENT_SERVER_SUBDIRS = [
   "openhands-agent-server",
   "openhands-sdk",
@@ -421,11 +428,16 @@ export const AGENT_SERVER_IMPORT_MODULES = "canvas_ui_tool";
  * - OH_AGENT_SERVER_GIT_REF: Git commit SHA or branch name
  * - OH_AGENT_SERVER_VERSION: Specific PyPI version (e.g., "1.55.0"), which
  *   opts back into the stock OpenHands release.
+ * - OH_LITELLM_VERSION: Specific PyPI litellm release (e.g., "1.93.0"),
+ *   opting out of the pinned litellm fork. Only relevant in the git/local
+ *   source modes; the stock-PyPI mode already uses stock litellm.
  *
  * With none set, defaults to the pinned SDK fork in config/defaults.json
  * (`sdkSource.gitRef`). The app ships that fork's DeepSeek v4/DSML and
  * announced-action fixes, so the default install is the fork rather than
- * stock PyPI.
+ * stock PyPI. The git/local modes also install the pinned litellm fork
+ * (config/defaults.json `litellmSource.gitRef`) so the DeepSeek V4/V4.1
+ * model-map entries FreeHands relies on are present.
  *
  * @param {Record<string, string | undefined>} env
  * @returns {{ command: string, args: string[], source: string }}
@@ -456,8 +468,16 @@ export function buildAgentServerCommand(env = process.env) {
       path.join(localPath, "openhands-workspace"),
       "--with",
       AGENT_SERVER_POSTHOG_CONSTRAINT,
-      "agent-server",
     );
+    // Same litellm fork default as the git path (see below); OH_LITELLM_VERSION
+    // opts back into a stock PyPI litellm.
+    const localLitellmVersion = env.OH_LITELLM_VERSION;
+    if (localLitellmVersion) {
+      uvxArgs.push("--with", `litellm==${localLitellmVersion}`);
+    } else {
+      uvxArgs.push("--with", `git+${LITELLM_GIT_REPO}@${DEFAULT_LITELLM_GIT_REF}`);
+    }
+    uvxArgs.push("agent-server");
     source = `local (${localPath})`;
   } else if (gitRef || !version) {
     // Use git ref with subdirectory syntax for uv workspace monorepo.
@@ -490,8 +510,19 @@ export function buildAgentServerCommand(env = process.env) {
       `${baseGitUrl}#subdirectory=openhands-workspace`,
       "--with",
       AGENT_SERVER_POSTHOG_CONSTRAINT,
-      "agent-server",
     );
+    // The SDK requires litellm>=1.93.0 and reads the model map from the
+    // installed litellm. Ship the pinned fork so the DeepSeek V4/V4.1 entries
+    // FreeHands relies on are present. Setting OH_LITELLM_VERSION pins a stock
+    // PyPI release of litellm instead (model metadata for the V4.1 models will
+    // be missing from upstream's map).
+    const litellmVersion = env.OH_LITELLM_VERSION;
+    if (litellmVersion) {
+      uvxArgs.push("--with", `litellm==${litellmVersion}`);
+    } else {
+      uvxArgs.push("--with", `git+${LITELLM_GIT_REPO}@${DEFAULT_LITELLM_GIT_REF}`);
+    }
+    uvxArgs.push("agent-server");
     source = gitRef ? `git (${ref})` : `git (${ref}, default)`;
   } else {
     // Explicit OH_AGENT_SERVER_VERSION: stock PyPI release, all SDK packages
