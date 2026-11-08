@@ -87,6 +87,28 @@ describe("DiscordConnectModal", () => {
     expect(mockCompleteDiscordConnect).toHaveBeenCalledWith(request, {
       connected: true,
       guildId: "123456789012345678",
+      botToken: undefined,
+    });
+  });
+
+  it("confirms with the pasted bot token", async () => {
+    const user = userEvent.setup();
+    await renderModal();
+
+    await user.type(
+      screen.getByTestId("discord-guild-id-input"),
+      "123456789012345678",
+    );
+    await user.type(
+      screen.getByTestId("discord-bot-token-input"),
+      "discord-bot-token",
+    );
+    await user.click(screen.getByTestId("discord-connect-confirm"));
+
+    expect(mockCompleteDiscordConnect).toHaveBeenCalledWith(request, {
+      connected: true,
+      guildId: "123456789012345678",
+      botToken: "discord-bot-token",
     });
   });
 

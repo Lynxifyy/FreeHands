@@ -2,10 +2,7 @@ import { createElement } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { I18nKey } from "#/i18n/declaration";
-import {
-  AUTOMATION_CATALOG,
-  type RecommendedAutomation,
-} from "@openhands/extensions/automations";
+import { type RecommendedAutomation } from "@openhands/extensions/automations";
 import {
   INTEGRATION_CATALOG as MCP_MARKETPLACE,
   type IntegrationCatalogEntry as MarketplaceEntry,
@@ -30,7 +27,10 @@ import {
   getAutomationLaunchPrompt,
   getIntegrationIds,
 } from "#/utils/automation-catalog";
-import { getAutomationsByPopularity } from "#/utils/recommended-automation-rail";
+import {
+  getAutomationsByPopularity,
+  getHostAutomationCatalog,
+} from "#/utils/recommended-automation-rail";
 import { cn } from "#/utils/utils";
 import {
   extensionModuleCardInteractiveClassName,
@@ -56,7 +56,9 @@ interface RecommendedAutomationsSectionProps {
 
 export { getAutomationsByPopularity };
 
-const RECOMMENDED_AUTOMATIONS = getAutomationsByPopularity(AUTOMATION_CATALOG);
+const RECOMMENDED_AUTOMATIONS = getAutomationsByPopularity(
+  getHostAutomationCatalog(),
+);
 
 // Proven automations are featured above the Beta group. The set is owned by
 // the interface manifest (falling back to the host default), not derived from

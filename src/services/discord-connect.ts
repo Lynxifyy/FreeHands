@@ -1,7 +1,9 @@
 import {
   CONNECT_DISCORD_TOOL_NAME,
+  DISCORD_BOT_TOKEN_SECRET_NAME,
   DISCORD_CONNECT_RESULT_PREFIX,
 } from "#/constants/discord";
+import { SecretsService } from "#/api/secrets-service";
 import {
   type DiscordConnectRequest,
   useDiscordConnectStore,
@@ -16,6 +18,8 @@ const LEDGER_STORAGE_KEY_PREFIX = "openhands-discord-connects:";
 export interface DiscordConnectOutcome {
   connected: boolean;
   guildId?: string | null;
+  /** Optional bot token the user pasted; stored as a secret, never echoed. */
+  botToken?: string;
 }
 
 type DiscordConnectResult =
@@ -62,16 +66,25 @@ function resolveResult(outcome: DiscordConnectOutcome): DiscordConnectResult {
   if (!outcome.connected) {
     return { status: "not_connected", guidance: NOT_CONNECTED_GUIDANCE };
   }
+  const guidance = !outcome.botToken?.trim()
+    ? CONNECTED_GUIDANCE
+    : "The FreeHands bot is now in the server. Its token was saved as the " +
+      `${DISCORD_BOT_TOKEN_SECRET_NAME} secret and is available to this ` +
+      "conversation. Send it as `Authorization: Bot $" +
+      `${DISCORD_BOT_TOKEN_SECRET_NAME}` +
+      "` against https://discord.com/api/v10. Never print or echo it.";
   return {
     status: "connected",
     guild_id: outcome.guildId ?? null,
-    guidance: CONNECTED_GUIDANCE,
+    guidance,
   };
 }
 
 /**
  * Hand the outcome of a Discord connect request back to the agent. The bot
- * token is never part of it — the agent reads that from its own secrets.
+ * token is stored as a secret when the user pasted one — it is never part of
+ * the result posted into the chat; the agent reads it from its own secrets
+ * under {@link DISCORD_BOT_TOKEN_SECRET_NAME}.
  *
  * Never rejects: the user has already answered, so a failure to report is
  * logged rather than surfaced.
@@ -83,6 +96,22 @@ export async function completeDiscordConnect(
   const store = useDiscordConnectStore.getState();
   if (!store.requests.some((r) => r.toolCallId === request.toolCallId)) return;
   store.dismiss(request.toolCallId);
+
+  const token = outcome.botToken?.trim();
+  if (token) {
+    await SecretsService.createSecret(
+      DISCORD_BOT_TOKEN_SECRET_NAME,
+      token,
+      "Discord bot token",
+    ).catch((error) => {
+      console.warn(
+        `[${CONNECT_DISCORD_TOOL_NAME}] Failed to save the bot token secret:`,
+        error,
+      );
+      // Fall through: the connect itself still succeeded, so report it; the
+      // agent guidance still points at the secret name for when it exists.
+    });
+  }
 
   await postClientToolResult(
     request.conversationId,

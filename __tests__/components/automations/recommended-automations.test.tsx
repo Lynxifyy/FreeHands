@@ -263,6 +263,7 @@ describe("recommended automations", () => {
       "linear-issue-to-bitbucket-pr",
       "jira-issue-to-pr",
       "qa-changes",
+      "discord",
       "jira-issue-to-gitlab-mr",
       "research-brief-writer",
       "jira-issue-to-bitbucket-pr",
@@ -294,7 +295,7 @@ describe("recommended automations", () => {
     expect(betaHeading).toHaveTextContent(
       I18nKey.RECOMMENDED_AUTOMATIONS$BETA_LABEL,
     );
-    expect(within(betaHeading).getByText("17")).toBeInTheDocument();
+    expect(within(betaHeading).getByText("18")).toBeInTheDocument();
 
     const betaSection = screen.getByTestId(
       "recommended-automations-beta-section",
@@ -1142,6 +1143,24 @@ describe("recommended automations", () => {
       expect(screen.queryByTestId("mcp-install-modal")).not.toBeInTheDocument();
     },
   );
+
+  it("routes the host Discord card to the guided Discord setup", async () => {
+    // Arrange
+    renderLauncher({ withBackendProvider: true });
+
+    // Act
+    fireEvent.click(
+      await screen.findByTestId("recommended-automation-card-discord"),
+    );
+
+    // Assert — Discord is a guided setup: the automation form opens
+    // pre-filled, no conversation is created and no MCP install is queued.
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith("/automations/setup"),
+    );
+    expect(mockCreateConversationMutate).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("mcp-install-modal")).not.toBeInTheDocument();
+  });
 
   it("opens the instance's integrations settings when the built-in integration is chosen", async () => {
     // Arrange

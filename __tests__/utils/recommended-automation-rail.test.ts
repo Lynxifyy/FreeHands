@@ -76,6 +76,7 @@ describe("recommended automation rail", () => {
       "linear-issue-to-gitlab-mr",
       "linear-issue-to-bitbucket-pr",
       "jira-issue-to-pr",
+      "discord",
       "jira-issue-to-gitlab-mr",
       "research-brief-writer",
       "jira-issue-to-bitbucket-pr",
@@ -87,6 +88,9 @@ describe("recommended automation rail", () => {
     expect(conversationIds).not.toContain("github-repo-monitor");
     // Same for `qa-changes` (extensions 0.19.0): host form, so neither group.
     expect(conversationIds).not.toContain("qa-changes");
+    // The host's own Discord entry is recommended without being proven, and is
+    // a host-flavoured conversation launch rather than a form-set one.
+    expect(conversationIds).toContain("discord");
     expect(isConversationLaunchAutomation(slackStandup)).toBe(true);
     expect(isConversationLaunchAutomation(upstreamFork)).toBe(false);
     expect(SETUP_REGISTRY.findById(upstreamFork.id)).not.toBeNull();
@@ -109,6 +113,7 @@ describe("recommended automation rail", () => {
       { name: "Linear issue to Bitbucket PR" },
       { name: "Jira issue to GitLab MR" },
       { name: "Jira issue to Bitbucket PR" },
+      { name: "Discord server" },
     ]);
 
     expect(flattenRecommendedRailGroups(groups)).toEqual([]);

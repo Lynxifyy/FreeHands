@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, MessageCircle } from "lucide-react";
+import { ExternalLink, KeyRound, MessageCircle } from "lucide-react";
 
 import { BrandButton } from "#/components/features/settings/brand-button";
 import {
@@ -33,11 +33,13 @@ export function DiscordConnectModal() {
     s.requests.find((r) => r.conversationId === conversationId),
   );
   const [guildId, setGuildId] = useState(request?.guildId ?? "");
+  const [botToken, setBotToken] = useState("");
 
   if (!request) return null;
 
   const title = t(I18nKey.DISCORD$CONNECT_TITLE);
   const trimmedGuildId = guildId.trim();
+  const trimmedBotToken = botToken.trim();
   const guildIdValid =
     trimmedGuildId === "" || GUILD_ID_PATTERN.test(trimmedGuildId);
 
@@ -61,6 +63,7 @@ export function DiscordConnectModal() {
     void completeDiscordConnect(request, {
       connected: true,
       guildId: trimmedGuildId || null,
+      botToken: trimmedBotToken || undefined,
     });
   };
 
@@ -125,6 +128,26 @@ export function DiscordConnectModal() {
             >
               {t(I18nKey.DISCORD$CONNECT_OPEN_APP)}
             </BrandButton>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="discord-bot-token"
+              className="flex items-center gap-1.5 text-sm font-medium text-contrast"
+            >
+              <KeyRound className="size-3.5" aria-hidden />
+              {t(I18nKey.DISCORD$CONNECT_BOT_TOKEN_LABEL)}
+            </label>
+            <input
+              id="discord-bot-token"
+              data-testid="discord-bot-token-input"
+              type="password"
+              autoComplete="off"
+              value={botToken}
+              onChange={(event) => setBotToken(event.target.value)}
+              placeholder={t(I18nKey.DISCORD$CONNECT_BOT_TOKEN_PLACEHOLDER)}
+              className="w-full rounded-lg border border-border bg-base-secondary px-3 py-2 text-sm text-contrast outline-none focus:border-discord"
+            />
           </div>
 
           <p className="text-xs leading-4 text-muted">
