@@ -4,6 +4,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { useActiveBackendContext } from "#/contexts/active-backend-context";
 import { isNoBackend } from "#/api/backend-registry/active-store";
 import { cloudIntegrationsUrl } from "#/utils/cloud-integrations-url";
+import { appSettingsLinkAttributes } from "#/utils/app-settings-link";
 import { cn } from "#/utils/utils";
 import {
   SIDEBAR_ICON_SLOT_CLASS,
@@ -24,14 +25,16 @@ export function IntegrationsSettingsLink() {
 
   if (isNoBackend(backend) || backend.kind !== "cloud") return null;
 
-  const integrationsUrl = cloudIntegrationsUrl(backend, orgId);
+  const link = appSettingsLinkAttributes(cloudIntegrationsUrl(backend, orgId));
+
+  if (!link) return null;
 
   return (
     <a
       data-testid="settings-integrations-link"
-      href={integrationsUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={link.href}
+      target={link.target}
+      rel={link.rel}
       className={cn(
         sidebarNavRowClassName({ collapsed: false }),
         SIDEBAR_ROW_INTERACTIVE_CLASS.idle,
@@ -43,7 +46,9 @@ export function IntegrationsSettingsLink() {
       <span className={cn(sidebarNavLabelClassName(false), "flex-1")}>
         {t(I18nKey.SETTINGS$INTEGRATIONS_SETTINGS_LINK)}
       </span>
-      <ExternalLink className="size-4 shrink-0 text-muted" aria-hidden />
+      {link.target === "_blank" && (
+        <ExternalLink className="size-4 shrink-0 text-muted" aria-hidden />
+      )}
     </a>
   );
 }

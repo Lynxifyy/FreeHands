@@ -36,6 +36,15 @@ export function isDesktopFullScreen(): boolean {
 }
 
 /**
+ * True inside the Electron desktop app. The preload injects `desktopShell`, so
+ * its presence — not a platform check — is what distinguishes the desktop app
+ * from a browser tab on the same loopback origin.
+ */
+export function isDesktopShell(): boolean {
+  return getDesktopShell() !== undefined;
+}
+
+/**
  * Subscribe to native fullscreen transitions. Returns an unsubscribe function;
  * outside the desktop app it is a no-op, since a browser tab owns no window.
  */

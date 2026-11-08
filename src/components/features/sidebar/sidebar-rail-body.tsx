@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
 import { NavigationLink } from "#/components/shared/navigation-link";
-import { getLockedCloudHost } from "#/api/agent-server-config";
+import { appSettingsLinkAttributes } from "#/utils/app-settings-link";
 import {
   automationListPath,
   getInterfaceCopy,
@@ -120,10 +120,12 @@ export function SidebarRailBody({
   const cloudSettingsUrl = isCloudBackend
     ? `${activeBackend.host.replace(/\/+$/, "")}/settings${cloudSettingsOrgQuery}`
     : null;
-  // Locked-to-Cloud (SaaS / self-hosted OHE) serves the canvas at /canvas on
-  // the cloud host itself, so cloud settings open in this tab and Back
-  // returns here (OHE-3242). Standalone / Electron keep the new tab.
-  const isLockedToCloud = getLockedCloudHost() !== null;
+  // A settings page on the canvas's own origin navigates in place (Back returns
+  // here, OHE-3242); a cross-origin one opens a new tab, except inside the
+  // packaged app, where it is dropped rather than opened in a browser.
+  const cloudSettingsLink = cloudSettingsUrl
+    ? appSettingsLinkAttributes(cloudSettingsUrl)
+    : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -295,11 +297,11 @@ export function SidebarRailBody({
             content={t(I18nKey.SIDEBAR$SETTINGS)}
             placement="right"
           >
-            {isCloudBackend && cloudSettingsUrl ? (
+            {cloudSettingsLink ? (
               <a
-                href={cloudSettingsUrl}
-                target={isLockedToCloud ? undefined : "_blank"}
-                rel={isLockedToCloud ? undefined : "noopener noreferrer"}
+                href={cloudSettingsLink.href}
+                target={cloudSettingsLink.target}
+                rel={cloudSettingsLink.rel}
                 data-testid="collapsed-settings-link"
                 aria-label={t(I18nKey.SIDEBAR$SETTINGS)}
                 className={sidebarNavRowClassName({ collapsed: true })}

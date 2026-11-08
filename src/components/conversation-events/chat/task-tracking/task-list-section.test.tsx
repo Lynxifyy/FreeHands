@@ -66,4 +66,26 @@ describe("task tracking list", () => {
     ).toBeInTheDocument();
     expect(container.querySelectorAll('[data-name="item"]')).toHaveLength(0);
   });
+
+  it("marks a completed task with a green tick", () => {
+    const { container } = render(
+      <TaskListSection
+        taskList={[
+          createTask({ title: "Still to do" }),
+          createTask({ title: "In flight", status: "in_progress" }),
+          createTask({ title: "Finished", status: "done" }),
+        ]}
+      />,
+    );
+
+    const doneIcon = container.querySelector(
+      '[data-name="item"]:last-child svg',
+    );
+    expect(doneIcon).toHaveClass("text-success");
+
+    // The unfinished rows keep the neutral white mark.
+    expect(
+      container.querySelector('[data-name="item"]:first-child svg'),
+    ).not.toHaveClass("text-success");
+  });
 });
