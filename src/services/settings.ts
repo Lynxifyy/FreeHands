@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enable_proactive_conversation_starters: false,
   enable_solvability_analysis: false,
   run_router_at_conversation_start: false,
+  always_keep_sandbox_alive: false,
   search_api_key: "",
   is_new_user: true,
   disabled_skills: [],

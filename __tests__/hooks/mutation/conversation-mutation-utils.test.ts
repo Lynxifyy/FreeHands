@@ -187,6 +187,24 @@ describe("conversation runtime commands", () => {
     expect(mocks.interruptConversation).not.toHaveBeenCalled();
   });
 
+  it("keeps the cloud sandbox alive when the keep-alive option is on", async () => {
+    prepareRuntimeConversation({ sandbox_id: "sandbox-cloud-7" });
+    mocks.getActiveBackend.mockReturnValueOnce({
+      backend: { kind: "cloud" },
+    });
+
+    await expect(
+      pauseConversation(CONV_ID, { keepSandboxAlive: true }),
+    ).resolves.toEqual({ success: true, keptAlive: true });
+
+    // The sandbox is never paused: only the agent is stopped, so the runtime
+    // URL stays valid for an instant resume.
+    expect(mocks.pauseCloudSandbox).not.toHaveBeenCalled();
+    expect(mocks.getAgentServerClientOptions).not.toHaveBeenCalled();
+    expect(ConversationClient).not.toHaveBeenCalled();
+    expect(mocks.interruptConversation).not.toHaveBeenCalled();
+  });
+
   it("rejects a cloud pause when the conversation has no sandbox", async () => {
     prepareRuntimeConversation({ sandbox_id: null });
     mocks.getActiveBackend.mockReturnValueOnce({

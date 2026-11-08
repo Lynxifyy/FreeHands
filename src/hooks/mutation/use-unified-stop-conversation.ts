@@ -7,6 +7,7 @@ import {
 } from "#/utils/custom-toast-handlers";
 import { useNavigation } from "#/context/navigation-context";
 import { I18nKey } from "#/i18n/declaration";
+import { useSettings } from "#/hooks/query/use-settings";
 import { ExecutionStatus } from "#/types/agent-server/core";
 import {
   pauseConversation,
@@ -16,12 +17,15 @@ import {
 export const useUnifiedPauseConversation = () => {
   const { t } = useTranslation("openhands");
   const queryClient = useQueryClient();
+  const { data: settings } = useSettings();
   const { conversationId: currentConversationId, navigate } = useNavigation();
 
   return useMutation({
     mutationKey: ["stop-conversation"],
     mutationFn: async (variables: { conversationId: string }) =>
-      pauseConversation(variables.conversationId),
+      pauseConversation(variables.conversationId, {
+        keepSandboxAlive: !!settings?.always_keep_sandbox_alive,
+      }),
     onMutate: async () => {
       const toastId = toast.loading(
         t(I18nKey.TOAST$STOPPING_CONVERSATION),
@@ -49,7 +53,7 @@ export const useUnifiedPauseConversation = () => {
         );
       }
     },
-    onSuccess: (_, variables, context) => {
+    onSuccess: (data, variables, context) => {
       if (context?.toastId) {
         toast.dismiss(context.toastId);
       }
@@ -59,9 +63,16 @@ export const useUnifiedPauseConversation = () => {
       // to the sandbox being paused. Leave sandbox_status server-authored: the
       // conversation route uses PAUSED as the signal to auto-resume when a user
       // later reopens an already-paused cloud conversation.
+      const keptAlive =
+        typeof data === "object" && data !== null && "keptAlive" in data
+          ? data.keptAlive
+          : false;
       patchConversationInCache(queryClient, variables.conversationId, {
         execution_status: ExecutionStatus.PAUSED,
-        conversation_url: null,
+        // "Keep sandboxes alive" keeps the cloud runtime up, so the URL stays
+        // valid and a later resume connects directly instead of waking a PAUSED
+        // sandbox.
+        ...(keptAlive ? {} : { conversation_url: null }),
       });
 
       if (currentConversationId === variables.conversationId) {

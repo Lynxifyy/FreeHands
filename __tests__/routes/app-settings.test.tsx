@@ -179,6 +179,29 @@ describe("AppSettingsScreen", () => {
     });
   });
 
+  it("saves the keep-sandboxes-alive preference", async () => {
+    const saveSettingsSpy = vi
+      .spyOn(SettingsService, "saveSettings")
+      .mockResolvedValue(true);
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
+
+    renderAppSettingsScreen();
+
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByTestId("always-keep-sandbox-alive-switch"),
+    );
+    await user.click(screen.getByTestId("submit-button"));
+
+    await waitFor(() => {
+      expect(saveSettingsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          always_keep_sandbox_alive: true,
+        }),
+      );
+    });
+  });
+
   it("saves a dedicated title generation profile", async () => {
     vi.spyOn(ProfilesService, "listProfiles").mockResolvedValue({
       profiles: [

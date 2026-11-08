@@ -139,6 +139,11 @@ export type Settings = {
    * conversations behave exactly as before unless the user opts in.
    */
   run_router_at_conversation_start: boolean;
+  /**
+   * When true, cloud sandboxes are kept alive when a conversation is stopped
+   * instead of being paused/closed out, so the workspace survives a stop.
+   */
+  always_keep_sandbox_alive: boolean;
   user_consents_to_analytics: boolean | null;
   search_api_key?: string;
   is_new_user?: boolean;

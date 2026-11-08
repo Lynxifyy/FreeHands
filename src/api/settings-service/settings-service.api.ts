@@ -40,6 +40,7 @@ export const APP_PREFERENCE_FIELDS = [
   "disabled_skills",
   "enabled_skills",
   "run_router_at_conversation_start",
+  "always_keep_sandbox_alive",
   "workspace_file_discovery",
 ] as const;
 
