@@ -26,7 +26,7 @@ export function TaskItem({ task }: TaskItemProps) {
       case "in_progress":
         return <CheckCircleHalfIcon className="w-4 h-4 text-[#ffffff]" />;
       case "done":
-        return <CheckCircleIcon className="w-4 h-4 text-muted" />;
+        return <CheckCircleIcon className="w-4 h-4 text-success" />;
       default:
         return <CircleIcon className="w-4 h-4 text-[#ffffff]" />;
     }
