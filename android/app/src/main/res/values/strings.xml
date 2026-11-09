@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">OpenHands</string>
-    <string name="title_activity_main">OpenHands</string>
+    <string name="app_name">FreeHands</string>
+    <string name="title_activity_main">FreeHands</string>
     <string name="package_name">dev.openhands.agentcanvas</string>
     <string name="custom_url_scheme">dev.openhands.agentcanvas</string>
     <string name="connection_channel_name">Connection</string>
