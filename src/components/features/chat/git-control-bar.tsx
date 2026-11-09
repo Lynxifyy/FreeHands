@@ -5,6 +5,7 @@ import { GitControlBarBranchButton } from "./git-control-bar-branch-button";
 import { GitControlBarPullButton } from "./git-control-bar-pull-button";
 import { GitControlBarPushButton } from "./git-control-bar-push-button";
 import { GitControlBarPrButton } from "./git-control-bar-pr-button";
+import { GitControlBarCodeReviewButton } from "./git-control-bar-code-review-button";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useLocalGitInfo } from "#/hooks/query/use-local-git-info";
 import { useTaskPolling } from "#/hooks/query/use-task-polling";
@@ -282,6 +283,19 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
                 hasRepository={hasRepository}
                 providerTokensReady={providerTokensReady}
                 currentGitProvider={gitProvider}
+                isConversationReady={isConversationReady}
+              />
+            </GitControlBarTooltipWrapper>
+
+            <GitControlBarTooltipWrapper
+              tooltipMessage={t(I18nKey.COMMON$GIT_TOOLS_DISABLED_CONTENT)}
+              testId="git-control-bar-code-review-button-tooltip"
+              shouldShowTooltip={!hasRepository}
+            >
+              <GitControlBarCodeReviewButton
+                onSuggestionsClick={onSuggestionsClick}
+                hasRepository={hasRepository}
+                providerTokensReady={providerTokensReady}
                 isConversationReady={isConversationReady}
               />
             </GitControlBarTooltipWrapper>

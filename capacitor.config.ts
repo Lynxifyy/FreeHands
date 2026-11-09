@@ -12,7 +12,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "dev.openhands.agentcanvas",
-  appName: "OpenHands",
+  appName: "FreeHands",
   webDir: "build",
   android: {
     // Mixed content lets the WebView load an http:// agent-server (LAN /

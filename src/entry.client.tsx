@@ -16,6 +16,7 @@ import { installAppUpdaterBridge } from "./utils/app-updater";
 import { waitForI18n } from "./i18n";
 import { shouldStartMockWorker } from "./mocks/should-start-mock-worker";
 import { isNativeShell } from "./utils/native-shell";
+import { markImmersiveShell } from "./utils/immersive-shell";
 
 async function prepareApp() {
   // DigitalOcean Managed Agents in the browser: present only when the server
@@ -29,6 +30,9 @@ async function prepareApp() {
   // Expose the Android shell's in-app updater as `window.freehandsUpdater`
   // before render, so the settings update control can read it synchronously.
   installAppUpdaterBridge();
+  // Flag the native shell before paint so the safe-area rules below apply on
+  // the first frame and the app never flashes its header under the status bar.
+  markImmersiveShell();
   await Promise.all([waitForI18n(), marsBridge]);
 
   if (shouldStartMockWorker()) {

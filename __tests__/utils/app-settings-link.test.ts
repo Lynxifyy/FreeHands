@@ -20,13 +20,10 @@ describe("resolveAppSettingsLink", () => {
     ).toEqual({ href: url });
   });
 
-  it("navigates in place inside the app shell for a same-origin page", () => {
+  it("drops a hosted settings page inside the app shell, same origin or not", () => {
     expect(
       resolveAppSettingsLink(url, { sameOrigin: true, isAppShell: true }),
-    ).toEqual({ href: url });
-  });
-
-  it("drops a cross-origin page inside the app shell instead of opening a browser", () => {
+    ).toBeNull();
     expect(
       resolveAppSettingsLink(url, { sameOrigin: false, isAppShell: true }),
     ).toBeNull();

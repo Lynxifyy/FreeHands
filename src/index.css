@@ -52,6 +52,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Native app shell: the Android activity hides the status and navigation bars
+   and draws edge to edge, so pad the body by the display cutout / gesture
+   insets and shorten the content box to match. A browser tab is untouched —
+   `markImmersiveShell()` only sets this attribute inside the packaged app. */
+html[data-immersive-shell="true"] body {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+html[data-immersive-shell="true"] .min-h-screen {
+  min-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+}
+
 code {
   font-family:
     source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;

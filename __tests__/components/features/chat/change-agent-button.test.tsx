@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   taskStatus: undefined as string | undefined,
   subConversationId: undefined as string | undefined,
   isCreatingConversation: false,
+  applyMode: vi.fn(async () => {}),
   handlePlanClick: vi.fn(
     (event?: { preventDefault?: () => void; stopPropagation?: () => void }) => {
       event?.preventDefault?.();
@@ -108,8 +109,15 @@ vi.mock("#/hooks/use-handle-plan-click", () => ({
   }),
 }));
 
+vi.mock("#/hooks/use-apply-conversation-agent-mode", () => ({
+  useApplyConversationAgentMode: () => ({
+    applyMode: mocks.applyMode,
+    isPending: false,
+  }),
+}));
+
 type RenderOverrides = {
-  conversationMode?: "code" | "plan";
+  conversationMode?: "code" | "plan" | "complex";
   subConversationTaskId?: string | null;
   conversationId?: string | null;
   activeConversationId?: string | null;
@@ -123,6 +131,8 @@ type RenderOverrides = {
 function renderButton(overrides: RenderOverrides = {}) {
   mocks.invalidateQueries.mockReset();
   mocks.handlePlanClick.mockReset();
+  mocks.applyMode.mockReset();
+  mocks.applyMode.mockResolvedValue(undefined);
   mocks.webSocketStatus = overrides.webSocketStatus ?? "OPEN";
   mocks.agentState = overrides.agentState ?? AgentState.AWAITING_USER_INPUT;
   mocks.conversation =
@@ -159,7 +169,7 @@ function renderButton(overrides: RenderOverrides = {}) {
 
 function getModeButton() {
   return screen.getByRole("button", {
-    name: /COMMON\$(CODE|PLAN)/,
+    name: /COMMON\$(CODE|PLAN|COMPLEX_CODE)/,
   });
 }
 
@@ -306,6 +316,26 @@ describe("ChangeAgentButton mode selection", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("selects complex and code modes from the menu", async () => {
+    const user = userEvent.setup();
+    renderButton();
+
+    await user.click(getModeButton());
+    await user.click(screen.getByTestId("complex-option"));
+
+    expect(getModeButton()).toHaveTextContent("COMMON$COMPLEX_CODE");
+    expect(mocks.applyMode).toHaveBeenCalledWith("complex");
+    expect(
+      screen.queryByTestId("change-agent-context-menu"),
+    ).not.toBeInTheDocument();
+
+    await user.click(getModeButton());
+    await user.click(screen.getByTestId("code-option"));
+
+    expect(getModeButton()).toHaveTextContent("COMMON$CODE");
+    expect(mocks.applyMode).toHaveBeenLastCalledWith("code");
+  });
+
   it("cycles modes with Shift+Tab without leaking the shortcut", async () => {
     renderButton();
 
@@ -335,6 +365,22 @@ describe("ChangeAgentButton mode selection", () => {
     await waitFor(() => {
       expect(getModeButton()).toHaveTextContent("COMMON$PLAN");
     });
+
+    const complexEvent = new KeyboardEvent("keydown", {
+      key: "Tab",
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    act(() => {
+      document.dispatchEvent(complexEvent);
+    });
+
+    expect(complexEvent.defaultPrevented).toBe(true);
+    await waitFor(() => {
+      expect(getModeButton()).toHaveTextContent("COMMON$COMPLEX_CODE");
+    });
+    expect(mocks.applyMode).toHaveBeenCalledWith("complex");
 
     const codeEvent = new KeyboardEvent("keydown", {
       key: "Tab",

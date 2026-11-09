@@ -9,6 +9,7 @@ import {
   getGitPushPrompt,
   getCreatePRPrompt,
   getCreateNewBranchPrompt,
+  getCodeReviewPrompt,
 } from "#/utils/utils";
 import { useConversationStore } from "#/stores/conversation-store";
 
@@ -16,6 +17,7 @@ import ArrowUpIcon from "#/icons/u-arrow-up.svg?react";
 import ArrowDownIcon from "#/icons/u-arrow-down.svg?react";
 import PrIcon from "#/icons/u-pr.svg?react";
 import CodeBranchIcon from "#/icons/u-code-branch.svg?react";
+import CodeReviewIcon from "#/icons/u-code-review.svg?react";
 import { I18nKey } from "#/i18n/declaration";
 
 const submenuListItemClassName = "!w-auto whitespace-nowrap";
@@ -48,6 +50,11 @@ export function GitToolsSubmenu({ onClose }: GitToolsSubmenuProps) {
 
   const onCreateNewBranch = () => {
     setMessageToSend(getCreateNewBranchPrompt());
+    onClose();
+  };
+
+  const onCodeReview = () => {
+    setMessageToSend(getCodeReviewPrompt());
     onClose();
   };
 
@@ -94,6 +101,17 @@ export function GitToolsSubmenu({ onClose }: GitToolsSubmenuProps) {
         <ToolsContextMenuIconText
           icon={<CodeBranchIcon width={16} height={16} />}
           text={t(I18nKey.COMMON$CREATE_NEW_BRANCH)}
+        />
+      </ContextMenuListItem>
+
+      <ContextMenuListItem
+        testId="code-review-button"
+        onClick={onCodeReview}
+        className={submenuListItemClassName}
+      >
+        <ToolsContextMenuIconText
+          icon={<CodeReviewIcon width={16} height={16} />}
+          text={t(I18nKey.COMMON$CODE_REVIEW)}
         />
       </ContextMenuListItem>
     </ContextMenu>

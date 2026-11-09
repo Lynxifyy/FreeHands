@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getGitPushPrompt: vi.fn(() => "push prompt"),
   getCreatePRPrompt: vi.fn(() => "pr prompt"),
   getCreateNewBranchPrompt: vi.fn(() => "branch prompt"),
+  getCodeReviewPrompt: vi.fn(() => "code review prompt"),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -29,6 +30,7 @@ vi.mock("#/utils/utils", () => ({
   getGitPushPrompt: mocks.getGitPushPrompt,
   getCreatePRPrompt: mocks.getCreatePRPrompt,
   getCreateNewBranchPrompt: mocks.getCreateNewBranchPrompt,
+  getCodeReviewPrompt: mocks.getCodeReviewPrompt,
 }));
 
 vi.mock("#/ui/context-menu", () => ({
@@ -102,6 +104,9 @@ describe("GitToolsSubmenu", () => {
     expect(screen.getByTestId("create-new-branch-button")).toHaveTextContent(
       "COMMON$CREATE_NEW_BRANCH",
     );
+    expect(screen.getByTestId("code-review-button")).toHaveTextContent(
+      "COMMON$CODE_REVIEW",
+    );
     for (const button of screen.getAllByRole("button")) {
       expect(button).toHaveClass("!w-auto", "whitespace-nowrap");
     }
@@ -116,6 +121,7 @@ describe("GitToolsSubmenu", () => {
       mocks.getCreateNewBranchPrompt,
       "branch prompt",
     ],
+    ["code-review-button", mocks.getCodeReviewPrompt, "code review prompt"],
   ])(
     "builds and queues the %s action before closing",
     (testId, prompt, text) => {
