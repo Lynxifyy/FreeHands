@@ -1,5 +1,5 @@
-import OpenHandsLogo from "#/assets/branding/openhands-logo.svg?react";
 import TerminalIcon from "#/icons/terminal.svg?react";
+import { OliRobotHead } from "#/components/features/chat/oli-robot-head";
 import {
   CLAUDE_CODE_MARK_PATH,
   CLAUDE_CODE_VIEWBOX,
@@ -19,15 +19,10 @@ import { cn } from "#/utils/utils";
 /**
  * Icons the conversation chip + onboarding tiles can render. Strictly broader
  * than {@link ACPProviderIcon} — that type covers ACP CLI subprocesses only
- * (plus the generic terminal fallback), whereas this type
- * additionally includes the native OpenHands harness.
+ * (plus the generic terminal fallback), whereas this type additionally includes
+ * the native OpenHands harness, which FreeHands brands as "Oli".
  */
 export type AgentBrandIconKind = "openhands" | ACPProviderIcon;
-
-// The OpenHands wordmark renders at a 3:2 (width:height) ratio. Kept as a
-// named constant so the conversation chip and the onboarding tile (24×16)
-// stay visually identical — see ``AgentOptionIcon`` in choose-agent-step.tsx.
-const OPENHANDS_LOGO_ASPECT_RATIO = 3 / 2;
 
 interface AgentBrandIconProps {
   kind: AgentBrandIconKind;
@@ -43,21 +38,17 @@ export function AgentBrandIcon({
   "data-testid": testId,
 }: AgentBrandIconProps) {
   if (kind === "openhands") {
-    // The shipped SVG draws the wordmark with ``fill="white"`` paths but
-    // leaves the two hand shapes as ``fill="transparent"`` (negative space).
-    // Recolor only the non-transparent paths to ``currentColor`` so the logo
-    // inherits the chip's text color *without* filling in the hands — a
-    // blanket ``[&_path]`` selector turns the whole mark into a solid blob.
+    // FreeHands brands the native harness as "Oli", so the chip, onboarding
+    // tile and preview show Oli's static blue robot head rather than the
+    // OpenHands wordmark. Static (no animation) so a list of many rows does not
+    // all animate; the live-activity chip keeps its own animated head.
     return (
-      <OpenHandsLogo
-        width={Math.round(size * OPENHANDS_LOGO_ASPECT_RATIO)}
-        height={size}
-        className={cn(
-          "shrink-0 [&_path:not([fill=transparent])]:fill-current",
-          className,
-        )}
-        data-testid={testId ?? "agent-brand-icon-openhands"}
-        aria-hidden
+      <OliRobotHead
+        status="thinking"
+        size={size}
+        animate={false}
+        className={className}
+        testId={testId ?? "agent-brand-icon-openhands"}
       />
     );
   }

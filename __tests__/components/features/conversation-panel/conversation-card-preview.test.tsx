@@ -103,6 +103,9 @@ describe("ConversationCardPreview", () => {
     expect(
       screen.getByTestId("agent-brand-icon-openhands"),
     ).toBeInTheDocument();
+    // FreeHands brands the native harness as Oli: the row shows Oli's robot
+    // head, not the OpenHands wordmark.
+    expect(screen.getAllByTestId("oli-robot-eye")).toHaveLength(2);
   });
 
   it("uses the ACP provider mark on the model row for ACP conversations", () => {

@@ -54,4 +54,29 @@ describe("OliRobotHead", () => {
     expect(head.style.width).toBe("24px");
     expect(head.style.height).toBe("24px");
   });
+
+  it("renders a static head (no animation classes) when animate is false", () => {
+    render(<OliRobotHead status="coding" animate={false} />);
+
+    const head = screen.getByTestId("oli-robot-head");
+    expect(head.innerHTML).not.toContain("animate-oli-code");
+    expect(head.innerHTML).not.toContain("animate-oli-think");
+    expect(head.innerHTML).not.toContain("animate-oli-antenna");
+    // Still the same blue robot head.
+    expect(head.innerHTML).toContain("bg-logo");
+  });
+
+  it("honours a custom test id so brand marks can rename the root", () => {
+    render(
+      <OliRobotHead
+        status="thinking"
+        animate={false}
+        testId="agent-brand-icon-openhands"
+      />,
+    );
+
+    expect(
+      screen.getByTestId("agent-brand-icon-openhands"),
+    ).toBeInTheDocument();
+  });
 });

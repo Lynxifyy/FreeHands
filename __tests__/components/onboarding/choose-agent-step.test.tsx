@@ -78,6 +78,20 @@ describe("ChooseAgentStep", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("brands the native tile as Oli with a robot-head mark, not the OpenHands logo", () => {
+    renderStep();
+
+    const native = screen.getByTestId("onboarding-agent-option-openhands");
+
+    // The tile is still keyed by the wire value ``openhands`` (agent_kind), but
+    // FreeHands presents it as Oli with Oli's robot head.
+    expect(within(native).getByText("Oli")).toBeInTheDocument();
+    expect(
+      within(native).getByTestId("onboarding-agent-icon-openhands"),
+    ).toBeInTheDocument();
+    expect(within(native).getAllByTestId("oli-robot-eye")).toHaveLength(2);
+  });
+
   it("renders the registry-selected Gemini icon on the Gemini CLI tile", () => {
     renderStep();
 
