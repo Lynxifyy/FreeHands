@@ -279,4 +279,28 @@ describe("Sidebar with Cloud Backend", () => {
     expect(settingsLink).not.toHaveAttribute("target");
     expect(settingsLink).not.toHaveAttribute("rel");
   });
+
+  it("keeps settings in-app inside the packaged app instead of the cloud website", () => {
+    // Arrange: the Android WebView loads the canvas, so the cloud settings URL
+    // shares the app origin — but the gear must open the in-app settings.
+    window.Capacitor = { isNativePlatform: () => true };
+    useSidebarStore.setState({ collapsed: true });
+
+    try {
+      // Act
+      const { navigate } = renderSidebar("/conversations");
+      const settingsLink = screen.getByTestId("collapsed-settings-link");
+      fireEvent.click(settingsLink);
+
+      // Assert: an in-app route, never a link to the hosted page
+      expect(settingsLink).not.toHaveAttribute("target");
+      expect(settingsLink).not.toHaveAttribute(
+        "href",
+        "https://cloud.example.com/settings?org=org-1",
+      );
+      expect(navigate).toHaveBeenCalledWith("/settings", { replace: false });
+    } finally {
+      delete window.Capacitor;
+    }
+  });
 });

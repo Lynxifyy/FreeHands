@@ -19,16 +19,17 @@ export interface AppSettingsLinkContext {
  *
  * A page on the app's own origin is navigated to in place, so browser Back
  * returns to the canvas. A cross-origin page opens in a new tab in a browser.
- * Inside a packaged app there is no external browser to hand the URL to, so a
- * cross-origin page is dropped — the caller renders nothing rather than a dead
- * link.
+ * Inside a packaged app there is no external browser to hand the URL to, and
+ * the hosted page is a different product than the app's own settings screen,
+ * so the link is always dropped — the caller renders the in-app settings entry
+ * instead of navigating the WebView away from the canvas.
  */
 export function resolveAppSettingsLink(
   url: string,
   context: AppSettingsLinkContext,
 ): AppSettingsLinkAttributes | null {
-  if (context.sameOrigin) return { href: url };
   if (context.isAppShell) return null;
+  if (context.sameOrigin) return { href: url };
   return { href: url, target: "_blank", rel: "noopener noreferrer" };
 }
 
@@ -36,7 +37,8 @@ export function resolveAppSettingsLink(
  * Resolve a settings link against the live environment. The page navigates in
  * place when it is served from this app's own deployment: a locked-to-Cloud
  * canvas (single host) or a URL sharing the canvas origin. Inside the packaged
- * app a cross-origin page has no browser to open in, so it is dropped.
+ * app the hosted page is dropped for every backend, so the caller falls back to
+ * the in-app settings route instead of navigating the WebView away.
  */
 export function appSettingsLinkAttributes(
   url: string,
