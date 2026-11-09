@@ -121,9 +121,11 @@ function AppSettingsForm() {
 
     const gitUserName =
       formData.get("git-user-name-input")?.toString() ||
+      settings?.git_user_name ||
       DEFAULT_SETTINGS.git_user_name;
     const gitUserEmail =
       formData.get("git-user-email-input")?.toString() ||
+      settings?.git_user_email ||
       DEFAULT_SETTINGS.git_user_email;
 
     saveSettings(

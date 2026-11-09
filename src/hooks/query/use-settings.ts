@@ -12,6 +12,7 @@ import {
   pickNullableString,
 } from "#/utils/settings-value-pickers";
 import { parseMcpConfig } from "#/utils/mcp-config";
+import { resolveGitUserEmail, resolveGitUserName } from "#/utils/git-identity";
 
 export const getErrorStatus = (error: unknown): number | undefined => {
   if (typeof error === "object" && error !== null && "status" in error) {
@@ -104,8 +105,21 @@ const normalizeSettingsResponse = (settings: Partial<Settings>): Settings => {
     mcp_config: mcpConfig,
     search_api_key: settings.search_api_key || "",
     email: settings.email || "",
-    git_user_name: settings.git_user_name || DEFAULT_SETTINGS.git_user_name,
-    git_user_email: settings.git_user_email || DEFAULT_SETTINGS.git_user_email,
+    // FreeHands commits as the signed-in user, not as "openhands". An explicit
+    // git setting wins; otherwise we fall back to the account email and the
+    // local part of it. The legacy defaults only apply when no identity is
+    // known (e.g. a local agent server with no signed-in user).
+    git_user_email:
+      resolveGitUserEmail({
+        configuredEmail: settings.git_user_email,
+        accountEmail: settings.email,
+      }) ?? DEFAULT_SETTINGS.git_user_email,
+    git_user_name:
+      resolveGitUserName({
+        configuredName: settings.git_user_name,
+        configuredEmail: settings.git_user_email,
+        accountEmail: settings.email,
+      }) ?? DEFAULT_SETTINGS.git_user_name,
     is_new_user: false,
     disabled_skills:
       settings.disabled_skills ?? DEFAULT_SETTINGS.disabled_skills,

@@ -28853,6 +28853,24 @@
     "ca": "Crea una PR",
     "id": "Buat PR"
   },
+  "COMMON$CODE_REVIEW": {
+    "en": "Code review",
+    "ja": "コードレビュー",
+    "zh-CN": "代码审查",
+    "zh-TW": "程式碼審查",
+    "ko-KR": "코드 리뷰",
+    "no": "Kodegjennomgang",
+    "it": "Revisione del codice",
+    "pt": "Revisão de código",
+    "es": "Revisión de código",
+    "ar": "مراجعة الكود",
+    "fr": "Revue de code",
+    "tr": "Kod incelemesi",
+    "de": "Code-Review",
+    "uk": "Огляд коду",
+    "ca": "Revisió de codi",
+    "id": "Tinjauan kode"
+  },
   "COMMON$DELETE_CONVERSATION": {
     "en": "Delete Conversation",
     "ja": "会話を削除",

@@ -341,9 +341,17 @@ export const constructBranchUrl = (
 // Git Action Prompts
 
 const GIT_COMMIT_PROMPT =
-  "Please review the current changes and create a git commit with a concise, descriptive message.";
+  "Please review the current changes and create a git commit with a concise, descriptive message. Commit with the repository's configured git identity; do not override git user.name or user.email.";
 
 export const getGitCommitPrompt = (): string => GIT_COMMIT_PROMPT;
+
+/**
+ * Generate a code review prompt: a repo-wide sweep for bugs, dead/unwired
+ * code, unfinished work, and broken paths, reported before any edits.
+ * @returns The code review prompt
+ */
+export const getCodeReviewPrompt = (): string =>
+  "Please review the code in this repository and report problems efficiently. Look for bugs, logic errors, code paths that are never wired up or called, unfinished or stubbed-out work, and anything broken or inconsistent anywhere in the codebase. For each finding, list the file and line, explain why it is a problem, and suggest a fix. Do not modify any files until I approve the findings.";
 
 /**
  * Generate a git pull prompt

@@ -3,6 +3,7 @@ import {
   constructBranchUrl,
   constructPullRequestUrl,
   constructRepositoryUrl,
+  getCodeReviewPrompt,
   getCreateNewBranchPrompt,
   getCreatePRPrompt,
   getGitCommitPrompt,
@@ -297,10 +298,18 @@ describe("constructBranchUrl with malformed repository coordinates", () => {
 });
 
 describe("git action prompts", () => {
-  it("returns a stable commit prompt", () => {
+  it("returns a stable commit prompt that keeps the configured identity", () => {
     expect(getGitCommitPrompt()).toBe(
-      "Please review the current changes and create a git commit with a concise, descriptive message.",
+      "Please review the current changes and create a git commit with a concise, descriptive message. Commit with the repository's configured git identity; do not override git user.name or user.email.",
     );
+  });
+
+  it("returns a code review prompt covering bugs, dead code and unfinished work", () => {
+    const prompt = getCodeReviewPrompt();
+    expect(prompt).toMatch(/review the code/i);
+    expect(prompt).toMatch(/bugs/i);
+    expect(prompt).toMatch(/never wired up/i);
+    expect(prompt).toMatch(/unfinished/i);
   });
 
   it("returns a stable pull prompt", () => {

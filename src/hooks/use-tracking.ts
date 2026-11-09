@@ -134,6 +134,10 @@ export const useTracking = () => {
     track("create_pr_button_clicked");
   };
 
+  const trackCodeReviewButtonClick = () => {
+    track("code_review_button_clicked");
+  };
+
   const trackUserSignupCompleted = () => {
     track("user_signup_completed", {
       signup_timestamp: new Date().toISOString(),
@@ -467,6 +471,7 @@ export const useTracking = () => {
     trackPushButtonClick,
     trackPullButtonClick,
     trackCreatePrButtonClick,
+    trackCodeReviewButtonClick,
     trackUserSignupCompleted,
     trackPrebuiltAutomationEnabled,
     trackAutomationSetupOpened,
