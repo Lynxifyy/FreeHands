@@ -8,6 +8,18 @@ import { useEventStore } from "#/stores/use-event-store";
 import type { OHEvent } from "#/stores/use-event-store";
 import { useWorkspaceMutationCounter } from "#/stores/use-workspace-mutation-counter";
 
+const mocks = vi.hoisted(() => ({
+  handleCanvasUIAction: vi.fn(),
+}));
+
+vi.mock("#/services/canvas-ui", () => ({
+  handleCanvasUIAction: mocks.handleCanvasUIAction,
+}));
+
+vi.mock("#/hooks/use-conversation-id", () => ({
+  useOptionalConversationId: () => ({ conversationId: "conv-1" }),
+}));
+
 function makeWrapper(client: QueryClient) {
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -18,6 +30,8 @@ function makeObservationEvent(
   id: string,
   kind: string,
   command: string,
+  path = "/workspace/project/foo.txt",
+  newContent: string | null = "hello",
 ): OHEvent {
   return {
     id,
@@ -30,9 +44,9 @@ function makeObservationEvent(
     observation: {
       kind,
       command,
-      path: "/workspace/project/foo.txt",
+      path,
       old_content: null,
-      new_content: "hello",
+      new_content: newContent,
       output: "ok",
     },
   } as unknown as OHEvent;
@@ -40,6 +54,7 @@ function makeObservationEvent(
 
 describe("useAutoRefreshFilesOnEdit", () => {
   beforeEach(() => {
+    mocks.handleCanvasUIAction.mockReset();
     act(() => {
       useEventStore.getState().clearEvents();
       // Reset the workspace mutation counter so per-test counter assertions
@@ -425,5 +440,97 @@ describe("useAutoRefreshFilesOnEdit", () => {
     // Re-render without adding new events — should not re-invalidate.
     rerender();
     expect(spy.mock.calls.length).toBe(callsAfterFirst);
+  });
+
+  it("opens the UI Preview for a file the agent just wrote", () => {
+    const client = new QueryClient();
+    renderHook(() => useAutoRefreshFilesOnEdit(), {
+      wrapper: makeWrapper(client),
+    });
+
+    act(() => {
+      useEventStore
+        .getState()
+        .addEvent(
+          makeObservationEvent(
+            "1",
+            "FileEditorObservation",
+            "create",
+            "/workspace/project/index.html",
+            "<html></html>",
+          ),
+        );
+    });
+
+    expect(mocks.handleCanvasUIAction).toHaveBeenCalledTimes(1);
+    expect(mocks.handleCanvasUIAction).toHaveBeenCalledWith(
+      { kind: "CanvasUIAction", command: "show_preview", path: "/workspace/project/index.html" },
+      "conv-1",
+    );
+  });
+
+  it("previews the newest UI file when several are written in one batch", () => {
+    const client = new QueryClient();
+    renderHook(() => useAutoRefreshFilesOnEdit(), {
+      wrapper: makeWrapper(client),
+    });
+
+    act(() => {
+      useEventStore
+        .getState()
+        .addEvent(
+          makeObservationEvent(
+            "1",
+            "FileEditorObservation",
+            "create",
+            "/workspace/project/index.html",
+            "<html></html>",
+          ),
+        );
+      useEventStore
+        .getState()
+        .addEvent(
+          makeObservationEvent(
+            "2",
+            "FileEditorObservation",
+            "create",
+            "/workspace/project/res/layout/activity_main.xml",
+            "<LinearLayout/>",
+          ),
+        );
+    });
+
+    expect(mocks.handleCanvasUIAction).toHaveBeenCalledTimes(1);
+    expect(mocks.handleCanvasUIAction).toHaveBeenCalledWith(
+      {
+        kind: "CanvasUIAction",
+        command: "show_preview",
+        path: "/workspace/project/res/layout/activity_main.xml",
+      },
+      "conv-1",
+    );
+  });
+
+  it("does not open the preview for a non-UI file write", () => {
+    const client = new QueryClient();
+    renderHook(() => useAutoRefreshFilesOnEdit(), {
+      wrapper: makeWrapper(client),
+    });
+
+    act(() => {
+      useEventStore
+        .getState()
+        .addEvent(
+          makeObservationEvent(
+            "1",
+            "FileEditorObservation",
+            "create",
+            "/workspace/project/src/main.py",
+            "print('hi')",
+          ),
+        );
+    });
+
+    expect(mocks.handleCanvasUIAction).not.toHaveBeenCalled();
   });
 });

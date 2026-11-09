@@ -3,6 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useEventStore, type OHEvent } from "#/stores/use-event-store";
 import { useWorkspaceMutationCounter } from "#/stores/use-workspace-mutation-counter";
+import { useOptionalConversationId } from "#/hooks/use-conversation-id";
+import { handleCanvasUIAction } from "#/services/canvas-ui";
+import { uiPreviewPathFromEvent } from "#/services/ui-preview/auto-preview";
+import type { CanvasUIAction } from "#/types/agent-server/core";
 
 // `kind` values we treat as a file-mutation observation.
 const FILE_EDIT_OBSERVATION_KINDS = new Set([
@@ -70,6 +74,7 @@ function isBashObservation(event: OHEvent): boolean {
 export function useAutoRefreshFilesOnEdit(): void {
   const queryClient = useQueryClient();
   const events = useEventStore((state) => state.events);
+  const { conversationId } = useOptionalConversationId();
   const bumpWorkspaceMutationCounter = useWorkspaceMutationCounter(
     (state) => state.bump,
   );
@@ -105,6 +110,7 @@ export function useAutoRefreshFilesOnEdit(): void {
   useEffect(() => {
     let hasNewFileEdits = false;
     let hasNewBashCommands = false;
+    let previewPath: string | null = null;
     for (const event of events) {
       const id: string | number | undefined =
         "id" in event ? event.id : undefined;
@@ -119,8 +125,14 @@ export function useAutoRefreshFilesOnEdit(): void {
         } else {
           processedEventsRef.current.add(event);
         }
-        if (isFileMutationObservation(event)) hasNewFileEdits = true;
-        else if (isBashObservation(event)) hasNewBashCommands = true;
+        if (isFileMutationObservation(event)) {
+          hasNewFileEdits = true;
+          // Keep the most recent UI write so the Preview tab lands on the file
+          // the agent is working on now, not an earlier one in the batch.
+          previewPath = uiPreviewPathFromEvent(event) ?? previewPath;
+        } else if (isBashObservation(event)) {
+          hasNewBashCommands = true;
+        }
       }
     }
 
@@ -147,5 +159,20 @@ export function useAutoRefreshFilesOnEdit(): void {
       // the whole canvas.
       bumpWorkspaceMutationCounter();
     }
-  }, [events, queryClient, bumpWorkspaceMutationCounter]);
+
+    // Automatic UI preview: when the agent just wrote a file the Preview tab
+    // can render (HTML/SVG/XML layout/Compose/markdown), route it there — the
+    // same dispatch the agent's explicit `show_preview` uses, so the preview
+    // opens and renders without the user asking.
+    if (previewPath && conversationId) {
+      handleCanvasUIAction(
+        {
+          kind: "CanvasUIAction",
+          command: "show_preview",
+          path: previewPath,
+        } as CanvasUIAction,
+        conversationId,
+      );
+    }
+  }, [events, queryClient, bumpWorkspaceMutationCounter, conversationId]);
 }
