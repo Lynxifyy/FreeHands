@@ -44,25 +44,17 @@ function getAgentOptionIcon(id: string): AgentBrandIconKind {
 export function AgentOptionIcon({ id, muted }: { id: string; muted: boolean }) {
   const icon = getAgentOptionIcon(id);
 
-  // The OpenHands wordmark is wider than the square brand marks (24×16 vs
-  // 18×18) and dims via opacity rather than a muted text colour — its paths
-  // inherit ``currentColor`` so it stays white on the tile.
-  if (icon === "openhands") {
-    return (
-      <AgentBrandIcon
-        kind="openhands"
-        size={16}
-        className={cn("text-contrast", muted && "opacity-55")}
-        data-testid="onboarding-agent-icon-openhands"
-      />
-    );
-  }
-
+  // Every mark is a square glyph now that the native harness renders Oli's
+  // blue robot head. The head is self-coloured, so ``text-muted`` only affects
+  // the ACP marks; a muted Oli dims via opacity instead.
   return (
     <AgentBrandIcon
       kind={icon}
       size={18}
-      className={muted ? "text-muted" : "text-contrast"}
+      className={cn(
+        muted ? "text-muted" : "text-contrast",
+        icon === "openhands" && muted && "opacity-55",
+      )}
       data-testid={`onboarding-agent-icon-${icon}`}
     />
   );
@@ -76,13 +68,13 @@ interface AgentOption {
 
 // Onboarding tile list is *derived* from the ACP registry so adding a
 // new provider (or changing a display name) only needs one edit in
-// ``acp-providers.ts``. The OpenHands tile is the only synthetic
-// entry — it isn't an ACP provider, just the canonical default.
+// ``acp-providers.ts``. The Oli tile is the only synthetic entry — it isn't an
+// ACP provider, just the native harness, which FreeHands brands as "Oli".
 function getAgentOptions(backendKind: BackendKind): AgentOption[] {
   return [
     {
       id: "openhands",
-      label: "OpenHands",
+      label: "Oli",
       descriptionKey: I18nKey.ONBOARDING$AGENT_OPENHANDS_DESCRIPTION,
     },
     ...getAcpProvidersForBackend(backendKind).map<AgentOption>((provider) => ({
