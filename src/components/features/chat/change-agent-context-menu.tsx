@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import CodeTagIcon from "#/icons/code-tag.svg?react";
 import LessonPlanIcon from "#/icons/lesson-plan.svg?react";
+import SparkleIcon from "#/icons/sparkle.svg?react";
 import { ContextMenu } from "#/ui/context-menu";
 import { ContextMenuListItem } from "../context-menu/context-menu-list-item";
 import { ContextMenuIconTextWithDescription } from "../context-menu/context-menu-icon-text-with-description";
@@ -15,6 +16,7 @@ interface ChangeAgentContextMenuProps {
   onClose: () => void;
   onCodeClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onPlanClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onComplexClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export function ChangeAgentContextMenu({
@@ -22,6 +24,7 @@ export function ChangeAgentContextMenu({
   onClose,
   onCodeClick,
   onPlanClick,
+  onComplexClick,
 }: ChangeAgentContextMenuProps) {
   const { t } = useTranslation("openhands");
   const menuRef = useClickOutsideElement<HTMLUListElement>(onClose);
@@ -37,6 +40,13 @@ export function ChangeAgentContextMenu({
     event.preventDefault();
     event.stopPropagation();
     onPlanClick?.(event);
+    onClose();
+  };
+
+  const handleComplexClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onComplexClick?.(event);
     onClose();
   };
 
@@ -70,6 +80,18 @@ export function ChangeAgentContextMenu({
           title={t(I18nKey.COMMON$PLAN)}
           description={t(I18nKey.COMMON$PLAN_AGENT_DESCRIPTION)}
           isActive={activeMode === "plan"}
+        />
+      </ContextMenuListItem>
+      <ContextMenuListItem
+        testId="complex-option"
+        onClick={handleComplexClick}
+        className={cn(activeMode === "complex" && "bg-interactive-hover")}
+      >
+        <ContextMenuIconTextWithDescription
+          icon={SparkleIcon}
+          title={t(I18nKey.COMMON$COMPLEX_CODE)}
+          description={t(I18nKey.COMMON$COMPLEX_CODE_AGENT_DESCRIPTION)}
+          isActive={activeMode === "complex"}
         />
       </ContextMenuListItem>
     </ContextMenu>

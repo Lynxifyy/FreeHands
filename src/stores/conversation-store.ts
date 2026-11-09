@@ -15,7 +15,7 @@ export type ConversationTab =
   | "preview"
   | "usage";
 
-export type ConversationMode = "code" | "plan";
+export type ConversationMode = "code" | "plan" | "complex";
 
 export type CommitsPaneSection = "uncommitted";
 

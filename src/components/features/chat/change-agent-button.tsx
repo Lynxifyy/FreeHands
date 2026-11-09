@@ -5,6 +5,7 @@ import { Typography } from "#/ui/typography";
 import { I18nKey } from "#/i18n/declaration";
 import { ComboboxCaretInline } from "#/ui/combobox-caret";
 import LessonPlanIcon from "#/icons/lesson-plan.svg?react";
+import SparkleIcon from "#/icons/sparkle.svg?react";
 import { CodePillIcon } from "#/icons/code-pill";
 import { useConversationStore } from "#/stores/conversation-store";
 import { ChangeAgentContextMenu } from "./change-agent-context-menu";
@@ -19,6 +20,7 @@ import { useActiveConversation } from "#/hooks/query/use-active-conversation";
 import { useUnifiedWebSocketStatus } from "#/hooks/use-unified-websocket-status";
 import { useSubConversationTaskPolling } from "#/hooks/query/use-sub-conversation-task-polling";
 import { useHandlePlanClick } from "#/hooks/use-handle-plan-click";
+import { useApplyConversationAgentMode } from "#/hooks/use-apply-conversation-agent-mode";
 import { useOptionalConversationId } from "#/hooks/use-conversation-id";
 import { StyledTooltip } from "#/components/shared/buttons/styled-tooltip";
 
@@ -81,6 +83,7 @@ export function ChangeAgentButton() {
 
   // Get handlePlanClick and isCreatingConversation from custom hook
   const { handlePlanClick, isCreatingConversation } = useHandlePlanClick();
+  const { applyMode } = useApplyConversationAgentMode();
 
   // Close context menu when agent starts running
   useEffect(() => {
@@ -108,12 +111,18 @@ export function ChangeAgentButton() {
         event.preventDefault();
         event.stopPropagation();
 
-        // Cycle between modes: code -> plan -> code
-        const nextMode = conversationMode === "code" ? "plan" : "code";
+        // Cycle between modes: code -> plan -> complex -> code
+        const nextMode =
+          conversationMode === "code"
+            ? "plan"
+            : conversationMode === "plan"
+              ? "complex"
+              : "code";
         if (nextMode === "plan") {
           handlePlanClick(event);
         } else {
           setConversationMode(nextMode);
+          void applyMode(nextMode);
         }
       }
     };
@@ -128,6 +137,7 @@ export function ChangeAgentButton() {
     conversationMode,
     setConversationMode,
     handlePlanClick,
+    applyMode,
   ]);
 
   const handleButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -140,23 +150,37 @@ export function ChangeAgentButton() {
     event.preventDefault();
     event.stopPropagation();
     setConversationMode("code");
+    void applyMode("code");
+  };
+
+  const handleComplexClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setConversationMode("complex");
+    void applyMode("complex");
   };
 
   const isExecutionAgent = conversationMode === "code";
 
   const buttonLabel = useMemo(() => {
-    if (isExecutionAgent) {
-      return t(I18nKey.COMMON$CODE);
+    if (conversationMode === "plan") {
+      return t(I18nKey.COMMON$PLAN);
     }
-    return t(I18nKey.COMMON$PLAN);
-  }, [isExecutionAgent, t]);
+    if (conversationMode === "complex") {
+      return t(I18nKey.COMMON$COMPLEX_CODE);
+    }
+    return t(I18nKey.COMMON$CODE);
+  }, [conversationMode, t]);
 
   const buttonIcon = useMemo(() => {
-    if (isExecutionAgent) {
-      return <CodePillIcon className="h-2.75 w-2.75 shrink-0" />;
+    if (conversationMode === "plan") {
+      return <LessonPlanIcon width={18} height={18} color="currentColor" />;
     }
-    return <LessonPlanIcon width={18} height={18} color="currentColor" />;
-  }, [isExecutionAgent]);
+    if (conversationMode === "complex") {
+      return <SparkleIcon width={16} height={16} />;
+    }
+    return <CodePillIcon className="h-2.75 w-2.75 shrink-0" />;
+  }, [conversationMode]);
 
   const button = (
     <div className="relative">
@@ -197,6 +221,7 @@ export function ChangeAgentButton() {
           onClose={() => setContextMenuOpen(false)}
           onCodeClick={handleCodeClick}
           onPlanClick={handlePlanClick}
+          onComplexClick={handleComplexClick}
         />
       )}
     </div>

@@ -16,6 +16,7 @@ import { ChatDictationButton } from "../chat-dictation-button";
 import { ContextWindowMeter } from "./context-window-meter";
 import CarretRightFillIcon from "#/icons/carret-right-fill.svg?react";
 import LessonPlanIcon from "#/icons/lesson-plan.svg?react";
+import SparkleIcon from "#/icons/sparkle.svg?react";
 import ThreeDotsVerticalIcon from "#/icons/three-dots-vertical.svg?react";
 import { CodePillIcon } from "#/icons/code-pill";
 import { useUnifiedPauseConversation } from "#/hooks/mutation/use-unified-stop-conversation";
@@ -32,6 +33,7 @@ import { useAgentState } from "#/hooks/use-agent-state";
 import { AgentState } from "#/types/agent-state";
 import { useUnifiedWebSocketStatus } from "#/hooks/use-unified-websocket-status";
 import { useHandlePlanClick } from "#/hooks/use-handle-plan-click";
+import { useApplyConversationAgentMode } from "#/hooks/use-apply-conversation-agent-mode";
 import { I18nKey } from "#/i18n/declaration";
 import { ToolsContextMenuIconText } from "../../controls/tools-context-menu-icon-text";
 import { ContextMenuListItem } from "../../context-menu/context-menu-list-item";
@@ -98,6 +100,7 @@ export function ChatInputActions({
   const { curAgentState } = useAgentState();
   const { conversationMode, setConversationMode } = useConversationStore();
   const { handlePlanClick, isCreatingConversation } = useHandlePlanClick();
+  const { applyMode } = useApplyConversationAgentMode();
 
   const actionsRowRef = React.useRef<HTMLDivElement>(null);
   const rightSectionRef = React.useRef<HTMLDivElement>(null);
@@ -345,9 +348,11 @@ export function ChatInputActions({
             <ToolsContextMenuIconText
               icon={<CodePillIcon className="h-2.75 w-2.75" />}
               text={
-                conversationMode === "code"
-                  ? t(I18nKey.COMMON$CODE)
-                  : t(I18nKey.COMMON$PLAN)
+                conversationMode === "plan"
+                  ? t(I18nKey.COMMON$PLAN)
+                  : conversationMode === "complex"
+                    ? t(I18nKey.COMMON$COMPLEX_CODE)
+                    : t(I18nKey.COMMON$CODE)
               }
               rightIcon={<CarretRightFillIcon width={10} height={10} />}
             />
@@ -372,6 +377,7 @@ export function ChatInputActions({
                     event.preventDefault();
                     event.stopPropagation();
                     setConversationMode("code");
+                    void applyMode("code");
                     closeOverflowMenus();
                   }}
                 >
@@ -396,6 +402,21 @@ export function ChatInputActions({
                       />
                     }
                     text={t(I18nKey.COMMON$PLAN)}
+                  />
+                </ContextMenuListItem>
+                <ContextMenuListItem
+                  testId="overflow-agent-complex"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setConversationMode("complex");
+                    void applyMode("complex");
+                    closeOverflowMenus();
+                  }}
+                >
+                  <ToolsContextMenuIconText
+                    icon={<SparkleIcon width={16} height={16} />}
+                    text={t(I18nKey.COMMON$COMPLEX_CODE)}
                   />
                 </ContextMenuListItem>
               </ContextMenu>

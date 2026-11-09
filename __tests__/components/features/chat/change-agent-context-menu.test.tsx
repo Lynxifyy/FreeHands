@@ -59,4 +59,27 @@ describe("ChangeAgentContextMenu", () => {
     expect(onCodeClick).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("offers Complex Code and calls onComplexClick when selected", () => {
+    const onClose = vi.fn();
+    const onComplexClick = vi.fn();
+
+    renderWithProviders(
+      <ChangeAgentContextMenu
+        activeMode="complex"
+        onClose={onClose}
+        onCodeClick={vi.fn()}
+        onPlanClick={vi.fn()}
+        onComplexClick={onComplexClick}
+      />,
+    );
+
+    const complexOption = screen.getByTestId("complex-option");
+    expect(complexOption).toHaveClass("bg-interactive-hover");
+
+    fireEvent.click(complexOption);
+
+    expect(onComplexClick).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
