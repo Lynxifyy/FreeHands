@@ -66,6 +66,36 @@ const taskObservation = (
   },
 });
 
+const makeTerminalObservation = (
+  id: string,
+  action: ActionEvent,
+): ObservationEvent => ({
+  id,
+  timestamp: `2026-07-27T18:01:${id.padStart(2, "0")}Z`,
+  source: "environment",
+  tool_name: action.tool_name,
+  tool_call_id: action.tool_call_id,
+  action_id: action.id,
+  observation: {
+    kind: "TerminalObservation",
+    content: [],
+    command: "npm run build",
+    exit_code: 0,
+    is_error: false,
+    timeout: false,
+    metadata: {
+      exit_code: 0,
+      pid: 1,
+      username: "openhands",
+      hostname: "runtime",
+      prefix: "",
+      suffix: "",
+      working_dir: "/workspace/project",
+      py_interpreter_path: null,
+    },
+  },
+});
+
 beforeEach(() => {
   t.mockClear();
 });
@@ -168,5 +198,47 @@ describe("TypingIndicator status", () => {
     expect(screen.getByTestId("live-activity-chip")).toHaveTextContent(
       I18nKey.THINKING$OLI_AND_MODEL,
     );
+  });
+
+  it("shows the running command as a second, dimmed line", () => {
+    render(
+      <TypingIndicator
+        events={[
+          makeActionEvent("1", {
+            kind: "TerminalAction",
+            command: "npm run build",
+            is_input: false,
+            timeout: null,
+            reset: false,
+          }),
+        ]}
+        model={RECOMMENDED_DEEPSEEK_MODEL}
+      />,
+    );
+
+    const command = screen.getByTestId("live-activity-command");
+    expect(command).toHaveTextContent("npm run build");
+    expect(command).toHaveClass("text-text-secondary/50");
+  });
+
+  it("drops the command line once the command finishes", () => {
+    const running = makeActionEvent("1", {
+      kind: "TerminalAction",
+      command: "npm run build",
+      is_input: false,
+      timeout: null,
+      reset: false,
+    });
+
+    render(
+      <TypingIndicator
+        events={[running, makeTerminalObservation("2", running)]}
+        model={RECOMMENDED_DEEPSEEK_MODEL}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("live-activity-command"),
+    ).not.toBeInTheDocument();
   });
 });

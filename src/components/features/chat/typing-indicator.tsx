@@ -123,6 +123,57 @@ export const deriveLiveActivity = (
   return THINKING_ACTIVITY;
 };
 
+/**
+ * The command the agent is running right now, for the semi-transparent second
+ * line under the thinking status. Returns `null` when the live action is not a
+ * shell command (or has already been answered by an observation).
+ */
+export const deriveRunningCommand = (
+  events: readonly OHEvent[],
+): string | null => {
+  const resolvedActionIds = new Set<string>();
+  const resolvedToolCallIds = new Set<string>();
+
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event.isFromPlanningAgent) {
+      continue;
+    }
+
+    if (isObservationEvent(event) || isUserRejectObservation(event)) {
+      resolvedActionIds.add(event.action_id);
+      resolvedToolCallIds.add(event.tool_call_id);
+      continue;
+    }
+
+    if (isAgentErrorEvent(event)) {
+      resolvedToolCallIds.add(event.tool_call_id);
+      continue;
+    }
+
+    if (isACPToolCallEvent(event)) {
+      if (event.status !== "pending" && event.status !== "in_progress") {
+        resolvedToolCallIds.add(event.tool_call_id);
+      }
+      continue;
+    }
+
+    if (
+      isActionEvent(event) &&
+      !resolvedActionIds.has(event.id) &&
+      !resolvedToolCallIds.has(event.tool_call_id)
+    ) {
+      const { action } = event;
+      return action.kind === "ExecuteBashAction" ||
+        action.kind === "TerminalAction"
+        ? action.command
+        : null;
+    }
+  }
+
+  return null;
+};
+
 interface TypingIndicatorProps {
   readonly events: readonly OHEvent[];
   /**
@@ -142,6 +193,7 @@ const THINKING_KEY = "ACTION_MESSAGE$THINK";
 export function TypingIndicator({ events, model }: TypingIndicatorProps) {
   const { t } = useTranslation("openhands");
   const activity = deriveLiveActivity(events);
+  const runningCommand = deriveRunningCommand(events);
   const oliStatus = deriveOliStatus(events);
   const modelLabel = thinkingModelLabel(model);
 
@@ -170,21 +222,32 @@ export function TypingIndicator({ events, model }: TypingIndicatorProps) {
     >
       <ThinkingOrb size={16} className="mr-0.5" />
       {oliStatus && <OliRobotHead status={oliStatus} size={16} />}
-      <span className="min-w-0 truncate">
-        {text ??
-          (activity.kind === "text" ? (
-            activity.text
-          ) : (
-            <Trans
-              ns="openhands"
-              i18nKey={activity.key}
-              values={activity.values}
-              components={{
-                path: <PathComponent />,
-                cmd: <MonoComponent />,
-              }}
-            />
-          ))}
+      <span className="flex min-w-0 flex-col">
+        <span className="glimmer min-w-0 truncate">
+          {text ??
+            (activity.kind === "text" ? (
+              activity.text
+            ) : (
+              <Trans
+                ns="openhands"
+                i18nKey={activity.key}
+                values={activity.values}
+                components={{
+                  path: <PathComponent />,
+                  cmd: <MonoComponent />,
+                }}
+              />
+            ))}
+        </span>
+        {runningCommand && (
+          <span
+            data-testid="live-activity-command"
+            className="min-w-0 truncate font-mono text-[0.9em] text-text-secondary/50"
+            title={runningCommand}
+          >
+            $ {runningCommand}
+          </span>
+        )}
       </span>
     </div>
   );

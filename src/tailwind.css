@@ -703,6 +703,45 @@ button.extension-module-card-interactive {
   }
 }
 
+/* FreeHands live status: a soft sheen sweeps across the thinking text so the
+   chip reads as "working" rather than frozen. */
+@keyframes glimmer {
+  0% {
+    transform: translateX(-140%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+.glimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.glimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.45) 50%,
+    transparent 100%
+  );
+  animation: glimmer 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glimmer::after {
+    animation: none;
+  }
+}
+
 .shine-text {
   color: transparent;
   -webkit-background-clip: text !important;

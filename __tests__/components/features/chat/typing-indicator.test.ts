@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { deriveLiveActivity } from "#/components/features/chat/typing-indicator";
+import {
+  deriveLiveActivity,
+  deriveRunningCommand,
+} from "#/components/features/chat/typing-indicator";
 import {
   SecurityRisk,
   type ActionEvent,
@@ -290,5 +293,66 @@ describe("deriveLiveActivity", () => {
       key: "ACTION_MESSAGE$THINK",
       values: {},
     });
+  });
+});
+
+describe("deriveRunningCommand", () => {
+  it("returns the command of the in-flight shell action", () => {
+    const event = makeActionEvent("1", {
+      kind: "TerminalAction",
+      command: "npm run build",
+      is_input: false,
+      timeout: null,
+      reset: false,
+    });
+
+    expect(deriveRunningCommand([event])).toBe("npm run build");
+  });
+
+  it("clears the command once its observation arrives", () => {
+    const event = makeActionEvent("1", {
+      kind: "ExecuteBashAction",
+      command: "git push",
+      is_input: false,
+      timeout: null,
+      reset: false,
+    });
+
+    expect(deriveRunningCommand([event])).toBe("git push");
+    expect(
+      deriveRunningCommand([event, makeObservationEvent("2", event)]),
+    ).toBeNull();
+  });
+
+  it.each([
+    {
+      name: "a file edit",
+      action: {
+        kind: "FileEditorAction",
+        command: "view",
+        path: "README.md",
+        file_text: null,
+        old_str: null,
+        new_str: null,
+        insert_line: null,
+        view_range: null,
+      } satisfies Action,
+    },
+    {
+      name: "an ACP tool call",
+      action: null,
+    },
+  ])("returns null for $name", ({ action }) => {
+    if (action === null) {
+      expect(
+        deriveRunningCommand([makeACPEvent("acp-1", "in_progress")]),
+      ).toBeNull();
+      return;
+    }
+    expect(deriveRunningCommand([makeActionEvent("1", action)])).toBeNull();
+  });
+
+  it("returns null when there is no live action", () => {
+    expect(deriveRunningCommand([])).toBeNull();
   });
 });
