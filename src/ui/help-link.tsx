@@ -22,7 +22,11 @@ interface HelpLinkProps extends VariantProps<typeof helpLinkVariants> {
   testId: string;
   text: string;
   linkText: string;
-  href: string;
+  /**
+   * Optional. When omitted the emphasis text renders as plain copy instead of
+   * an anchor, so in-app settings never bounce the user to an external site.
+   */
+  href?: string;
   suffix?: string;
   /** Optional second link rendered after the suffix. */
   suffixLinkText?: string;
@@ -55,18 +59,29 @@ export function HelpLink({
       className={cn(helpLinkVariants({ size }), className)}
     >
       {text}{" "}
-      <a
-        href={href}
-        rel="noreferrer noopener"
-        target="_blank"
-        className={cn(
-          "underline underline-offset-2",
-          helpLinkVariants({ size, linkColor }),
-          linkTextClassName,
-        )}
-      >
-        {linkText}
-      </a>
+      {href ? (
+        <a
+          href={href}
+          rel="noreferrer noopener"
+          target="_blank"
+          className={cn(
+            "underline underline-offset-2",
+            helpLinkVariants({ size, linkColor }),
+            linkTextClassName,
+          )}
+        >
+          {linkText}
+        </a>
+      ) : (
+        <span
+          className={cn(
+            helpLinkVariants({ size, linkColor }),
+            linkTextClassName,
+          )}
+        >
+          {linkText}
+        </span>
+      )}
       {suffix && <span className={suffixClassName}>{suffix}</span>}
       {suffixLinkText && suffixLinkHref ? (
         <>

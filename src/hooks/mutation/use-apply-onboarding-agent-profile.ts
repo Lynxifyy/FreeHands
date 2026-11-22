@@ -1,10 +1,13 @@
 import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import AgentProfilesService, {
   WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME,
   type AgentProfileSaveInput,
 } from "#/api/agent-profiles-service/agent-profiles-service.api";
+import { ensureOliAgentProfile } from "#/api/agent-profiles-service/oli-agent-profile";
 import { useSaveAgentProfile } from "#/hooks/mutation/use-save-agent-profile";
 import { useActivateAgentProfile } from "#/hooks/mutation/use-activate-agent-profile";
+import { AGENT_PROFILES_QUERY_KEYS } from "#/hooks/query/query-keys";
 
 /**
  * The well-known agent profile onboarding configures. Conversations launch from
@@ -29,6 +32,7 @@ export const ONBOARDING_AGENT_PROFILE_NAME =
 export function useApplyOnboardingAgentProfile() {
   const saveProfile = useSaveAgentProfile();
   const activateProfile = useActivateAgentProfile();
+  const queryClient = useQueryClient();
 
   return useCallback(
     async (profile: AgentProfileSaveInput) => {
@@ -43,6 +47,23 @@ export function useApplyOnboardingAgentProfile() {
           name: ONBOARDING_AGENT_PROFILE_NAME,
           profile,
         });
+
+        if (profile.agent_kind === "openhands") {
+          // FreeHands' built-in agent is Oli, so onboarding lands the user on
+          // the Oli profile (identity persona + advanced tools) rather than a
+          // bare OpenHands profile. `ensureOliAgentProfile` never overwrites an
+          // existing Oli profile, so a user's edits survive re-onboarding.
+          const oli = await ensureOliAgentProfile();
+          if (oli.activated) {
+            await queryClient.invalidateQueries({
+              queryKey: AGENT_PROFILES_QUERY_KEYS.all,
+            });
+            return;
+          }
+          // No Oli profile could be created (older backend / no LLM profile);
+          // fall through and activate the baseline default instead.
+        }
+
         // activate needs the stable id; the save response only echoes the name.
         const detail = await AgentProfilesService.getProfile(
           ONBOARDING_AGENT_PROFILE_NAME,
@@ -53,6 +74,6 @@ export function useApplyOnboardingAgentProfile() {
         console.error("Failed to configure onboarding agent profile:", error);
       }
     },
-    [saveProfile, activateProfile],
+    [saveProfile, activateProfile, queryClient],
   );
 }

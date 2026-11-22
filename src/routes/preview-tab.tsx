@@ -69,6 +69,22 @@ function UiPreviewPanel() {
     [target, query.data?.text],
   );
 
+  const staticUrl = query.data?.staticUrl
+    ? withWorkspaceCacheBuster(query.data.staticUrl, effectiveToken)
+    : null;
+
+  // A real workspace URL (local backend) can back the iframe directly: the
+  // document loads with its own origin so relative CSS/JS/images resolve, and
+  // authored scripts run inside the sandbox. A `data:` URL (cloud) cannot, so
+  // those formats fall back to `srcdoc` with a `<base>` pointing at the file's
+  // directory.
+  const isHttpUrl = !!staticUrl && /^https?:\/\//i.test(staticUrl);
+  const baseHref = useMemo(() => {
+    if (!staticUrl || !isHttpUrl) return null;
+    const withoutQuery = staticUrl.split(/[?#]/, 1)[0];
+    return withoutQuery.slice(0, withoutQuery.lastIndexOf("/") + 1);
+  }, [staticUrl, isHttpUrl]);
+
   if (!target) {
     return (
       <ConversationTabEmptyState
@@ -87,14 +103,15 @@ function UiPreviewPanel() {
   }
 
   const format = detected === "unknown" ? target.format : detected;
-
-  const staticUrl = query.data?.staticUrl
-    ? withWorkspaceCacheBuster(query.data.staticUrl, effectiveToken)
-    : null;
+  const useStaticFrame = (format === "html" || format === "svg") && isHttpUrl;
 
   const srcDoc =
     query.data?.kind === "text" && query.data.text !== null
-      ? buildPreviewSrcDoc({ format, content: query.data.text })
+      ? buildPreviewSrcDoc({
+          format,
+          content: query.data.text,
+          baseHref,
+        })
       : null;
 
   return (
@@ -175,7 +192,15 @@ function UiPreviewPanel() {
         )}
         {!query.isLoading && query.data && (
           <>
-            {srcDoc !== null ? (
+            {useStaticFrame && staticUrl ? (
+              <iframe
+                data-testid="ui-preview-frame"
+                title={target.path}
+                sandbox={allowScripts ? "allow-scripts" : ""}
+                src={staticUrl}
+                className="h-full w-full border-0 bg-white"
+              />
+            ) : srcDoc !== null ? (
               <iframe
                 data-testid="ui-preview-frame"
                 title={target.path}

@@ -19,8 +19,10 @@ export interface CodeToolsSettings {
   /** Re-render the UI Preview when the agent edits the previewed file. */
   previewAutoRefresh: boolean;
   /**
-   * Allow scripts inside the UI Preview iframe. Off by default: the iframe is
-   * sandboxed without `allow-same-origin`, and most previews are static.
+   * Allow scripts inside the UI Preview iframe. On by default: real UI (and
+   * every framework dev build) is script-driven, and the iframe is sandboxed
+   * without `allow-same-origin`, so previewed code still cannot reach Canvas
+   * state, cookies, or storage. Users can turn it off for a static-only preview.
    */
   previewAllowScripts: boolean;
 }
@@ -28,7 +30,7 @@ export interface CodeToolsSettings {
 export const CODE_TOOLS_SETTINGS_DEFAULTS: CodeToolsSettings = {
   critiqueStrictness: "normal",
   previewAutoRefresh: true,
-  previewAllowScripts: false,
+  previewAllowScripts: true,
 };
 
 const STORAGE_KEY = "code-tools-settings";

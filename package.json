@@ -106,6 +106,7 @@
     "typecheck": "react-router typegen && tsc",
     "typecheck:staged": "react-router typegen && npx tsc --noEmit --skipLibCheck",
     "check-translation-completeness": "node scripts/check-translation-completeness.cjs",
+    "check:connected-repos": "node scripts/check-connected-repos.mjs",
     "build:app": "npm run make-i18n && react-router build",
     "android:icons": "python3 scripts/generate-android-icons.py",
     "android:sync": "npm run build:app && npx cap sync android",

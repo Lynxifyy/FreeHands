@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "dependency-upgrade-check",
+  "version": "1.0.0",
+  "description": "Find outdated and vulnerable dependencies, then prepare a safe, tested upgrade plan.",
+  "author": { "name": "FreeHands" },
+  "license": "MIT",
+  "keywords": ["dependencies", "security", "upgrade", "audit", "npm", "python"]
+}

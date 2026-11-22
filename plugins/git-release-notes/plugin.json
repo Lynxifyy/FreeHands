@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "git-release-notes",
+  "version": "1.0.0",
+  "description": "Turn git history since the last tag into grouped, user-facing release notes.",
+  "author": { "name": "FreeHands" },
+  "license": "MIT",
+  "keywords": ["release", "changelog", "git", "notes"]
+}

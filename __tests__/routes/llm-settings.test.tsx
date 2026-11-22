@@ -689,9 +689,9 @@ describe("LlmSettingsScreen - OpenHands provider on cloud", () => {
     expect(screen.getByTestId("llm-api-key-input")).toBeInTheDocument();
     const openHandsHelp = screen.getByTestId("openhands-api-key-help");
     expect(openHandsHelp).toBeInTheDocument();
-    // The OpenHands provider help uses the split TEXT/LINK/SUFFIX keys (not
-    // the stale single-string "API Keys tab" key) and links to OpenHands
-    // Cloud's API Keys page, where the OpenHands LLM Key section lives.
+    // The OpenHands provider help uses the split TEXT/LINK/SUFFIX keys and is
+    // deliberately link-free: settings must not redirect off to the OpenHands
+    // website.
     expect(openHandsHelp).toHaveTextContent(
       "SETTINGS$OPENHANDS_API_KEY_HELP_TEXT",
     );
@@ -701,20 +701,8 @@ describe("LlmSettingsScreen - OpenHands provider on cloud", () => {
     expect(openHandsHelp).toHaveTextContent(
       "SETTINGS$OPENHANDS_API_KEY_HELP_SUFFIX",
     );
-    expect(openHandsHelp).toHaveTextContent(
-      "SETTINGS$SEE_HERE_FOR_MORE_DETAILS",
-    );
     expect(openHandsHelp).not.toHaveTextContent("SETTINGS$NAV_API_KEYS");
-    const helpLinks = within(openHandsHelp).getAllByRole("link");
-    expect(helpLinks).toHaveLength(2);
-    expect(helpLinks[0]).toHaveAttribute(
-      "href",
-      "https://app.all-hands.dev/settings/api-keys",
-    );
-    expect(helpLinks[1]).toHaveAttribute(
-      "href",
-      "https://docs.openhands.dev/usage/local-setup#getting-an-api-key",
-    );
+    expect(within(openHandsHelp).queryAllByRole("link")).toHaveLength(0);
   });
 
   it("still shows the API key input for a non-OpenHands provider on cloud", async () => {

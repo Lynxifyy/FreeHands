@@ -13,7 +13,8 @@ export const FIELD_HELP_LINKS: Record<
   {
     textKey: string;
     linkTextKey: string;
-    href: string;
+    /** Optional. Omitted for in-app guidance that must not redirect off-site. */
+    href?: string;
     /** Skip rendering the schema description separately when the help text already includes it. */
     hideDescription?: boolean;
     /** Optional trailing copy rendered after the link (e.g. " section of OpenHands Cloud."). */
@@ -23,7 +24,6 @@ export const FIELD_HELP_LINKS: Record<
   "llm.api_key": {
     textKey: "SCHEMA$LLM$API_KEY$HELP_TEXT",
     linkTextKey: "SCHEMA$LLM$API_KEY$HELP_LINK_TEXT",
-    href: "https://docs.openhands.dev/usage/local-setup#getting-an-api-key",
   },
   // Mirror the hint shown under the LLM provider's API key field when
   // OpenHands is selected as the active provider; the SDK reuses that active
@@ -32,7 +32,6 @@ export const FIELD_HELP_LINKS: Record<
     textKey: "SCHEMA$VERIFICATION$CRITIC_API_KEY$HELP_TEXT",
     linkTextKey: "SETTINGS$OPENHANDS_API_KEY_HELP_LINK",
     suffixKey: "SCHEMA$VERIFICATION$CRITIC_API_KEY$HELP_SUFFIX",
-    href: "https://app.all-hands.dev/settings/api-keys",
     hideDescription: true,
   },
 };

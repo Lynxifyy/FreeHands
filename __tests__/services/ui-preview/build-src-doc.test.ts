@@ -75,4 +75,31 @@ describe("buildPreviewSrcDoc", () => {
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).toContain("&lt;script&gt;");
   });
+
+  it("adds a base href so a fragment's relative assets resolve", () => {
+    const html = buildPreviewSrcDoc({
+      format: "html",
+      content: '<link rel="stylesheet" href="style.css" /><p>hi</p>',
+      baseHref: "http://localhost:3000/api/workspace/site/",
+    });
+
+    expect(html).toContain(
+      '<base href="http://localhost:3000/api/workspace/site/" />',
+    );
+    expect(html.indexOf("<base")).toBeLessThan(html.indexOf("style.css"));
+  });
+
+  it("injects the base href into a full document head once", () => {
+    const doc =
+      '<!doctype html><html><head><title>x</title></head><body><h1>Hi</h1></body></html>';
+    const html = buildPreviewSrcDoc({
+      format: "html",
+      content: doc,
+      baseHref: "http://localhost:3000/site/",
+    });
+
+    expect(html.match(/<base /g)).toHaveLength(1);
+    expect(html).toContain('<head><base href="http://localhost:3000/site/" />');
+    expect(html).toContain("<h1>Hi</h1>");
+  });
 });

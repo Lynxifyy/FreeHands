@@ -230,8 +230,8 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => [
-  { title: "OpenHands" },
-  { name: "description", content: "Let's Start Building!" },
+  { title: "FreeHands" },
+  { name: "description", content: "AI-driven development with Oli." },
 ];
 
 export default function App() {

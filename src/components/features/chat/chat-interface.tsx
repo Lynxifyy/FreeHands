@@ -149,9 +149,14 @@ export function ChatInterface({
 
   // Block sending in a resumed conversation that has no usable LLM, and show
   // the same setup banner as the home screen so the dead end is explained.
+  // Complex Code runs an ACP agent (OpenCode) that owns its own model, so the
+  // native LLM gate does not apply — gating it there produced a false "set up
+  // an LLM" dead end for a perfectly runnable agent.
   const { isConfigured: isLlmConfigured, isLoading: isLlmConfigLoading } =
     useLlmConfigured();
-  const llmBlocked = !isLlmConfigLoading && !isLlmConfigured;
+  const agentManagesOwnLlm = conversationMode === "complex";
+  const llmBlocked =
+    !isLlmConfigLoading && !isLlmConfigured && !agentManagesOwnLlm;
 
   // Disable Build button while agent is running (streaming)
   const isAgentRunning =

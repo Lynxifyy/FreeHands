@@ -214,14 +214,14 @@ export function TypingIndicator({ events, model }: TypingIndicatorProps) {
 
   return (
     <div
-      className="flex min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text-secondary"
+      className="flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-text-secondary"
       data-testid="live-activity-chip"
       data-oli-active={oliStatus ?? "false"}
       role="status"
       aria-live="polite"
     >
-      <ThinkingOrb size={16} className="mr-0.5" />
-      {oliStatus && <OliRobotHead status={oliStatus} size={16} />}
+      <ThinkingOrb size={13} className="mr-0.5" />
+      {oliStatus && <OliRobotHead status={oliStatus} size={13} />}
       <span className="flex min-w-0 flex-col">
         <span className="glimmer min-w-0 truncate">
           {text ??

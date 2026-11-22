@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "repo-health-audit",
+  "version": "1.0.0",
+  "description": "Audit a repository's build, tests, lint, TODOs and dependency risk, then write a prioritised health report.",
+  "author": { "name": "FreeHands" },
+  "license": "MIT",
+  "keywords": ["audit", "quality", "tests", "lint", "report"]
+}

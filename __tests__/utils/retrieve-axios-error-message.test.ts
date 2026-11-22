@@ -5,6 +5,7 @@ import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message"
 import {
   BACKEND_REQUEST_TIMEOUT_MESSAGE,
   CORS_OR_NETWORK_ERROR_MESSAGE,
+  VERTEX_AI_BETA_ERROR_MESSAGE,
 } from "#/utils/user-facing-error";
 
 // The shared TypeScript client throws an HttpError whose message is the raw
@@ -123,6 +124,13 @@ describe("retrieveAxiosErrorMessage", () => {
       description: "the timeout wording for a timed-out request",
       error: new Error("Request timeout after 60000ms"),
       expected: BACKEND_REQUEST_TIMEOUT_MESSAGE,
+    },
+    {
+      description: "actionable guidance for a Vertex AI Gemini failure",
+      error: new Error(
+        "litellm.NotFoundError: Vertex_ai_betaException - b''",
+      ),
+      expected: VERTEX_AI_BETA_ERROR_MESSAGE,
     },
     {
       description: "a string error as is",

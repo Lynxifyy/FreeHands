@@ -15,7 +15,7 @@ describe("useCodeToolsSettingsStore", () => {
     const state = useCodeToolsSettingsStore.getState();
     expect(state.critiqueStrictness).toBe("normal");
     expect(state.previewAutoRefresh).toBe(true);
-    expect(state.previewAllowScripts).toBe(false);
+    expect(state.previewAllowScripts).toBe(true);
   });
 
   it("updates the critique strictness", () => {
@@ -31,21 +31,23 @@ describe("useCodeToolsSettingsStore", () => {
   });
 
   it("updates the preview scripts preference", () => {
-    useCodeToolsSettingsStore.getState().setPreviewAllowScripts(true);
-    expect(useCodeToolsSettingsStore.getState().previewAllowScripts).toBe(true);
+    useCodeToolsSettingsStore.getState().setPreviewAllowScripts(false);
+    expect(useCodeToolsSettingsStore.getState().previewAllowScripts).toBe(
+      false,
+    );
   });
 
   it("restores every default on reset", () => {
     const store = useCodeToolsSettingsStore.getState();
     store.setCritiqueStrictness("relaxed");
     store.setPreviewAutoRefresh(false);
-    store.setPreviewAllowScripts(true);
+    store.setPreviewAllowScripts(false);
 
     store.reset();
 
     const state = useCodeToolsSettingsStore.getState();
     expect(state.critiqueStrictness).toBe("normal");
     expect(state.previewAutoRefresh).toBe(true);
-    expect(state.previewAllowScripts).toBe(false);
+    expect(state.previewAllowScripts).toBe(true);
   });
 });

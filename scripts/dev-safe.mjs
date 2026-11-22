@@ -431,6 +431,9 @@ export const AGENT_SERVER_IMPORT_MODULES = "canvas_ui_tool";
  * - OH_LITELLM_VERSION: Specific PyPI litellm release (e.g., "1.93.0"),
  *   opting out of the pinned litellm fork. Only relevant in the git/local
  *   source modes; the stock-PyPI mode already uses stock litellm.
+ * - OH_LITELLM_LOCAL_PATH: Absolute path to a litellm checkout. Installs that
+ *   checkout instead of the pinned fork so local litellm edits are picked up.
+ *   Takes precedence over OH_LITELLM_VERSION.
  *
  * With none set, defaults to the pinned SDK fork in config/defaults.json
  * (`sdkSource.gitRef`). The app ships that fork's DeepSeek v4/DSML and
@@ -469,10 +472,19 @@ export function buildAgentServerCommand(env = process.env) {
       "--with",
       AGENT_SERVER_POSTHOG_CONSTRAINT,
     );
-    // Same litellm fork default as the git path (see below); OH_LITELLM_VERSION
-    // opts back into a stock PyPI litellm.
+    // Same litellm fork default as the git path (see below);
+    // OH_LITELLM_LOCAL_PATH installs a checkout, OH_LITELLM_VERSION a stock
+    // PyPI release.
     const localLitellmVersion = env.OH_LITELLM_VERSION;
-    if (localLitellmVersion) {
+    const localLitellmPath = env.OH_LITELLM_LOCAL_PATH;
+    if (localLitellmPath) {
+      if (!path.isAbsolute(localLitellmPath)) {
+        throw new Error(
+          `OH_LITELLM_LOCAL_PATH must be an absolute path, got: ${localLitellmPath}`,
+        );
+      }
+      uvxArgs.push("--with", localLitellmPath);
+    } else if (localLitellmVersion) {
       uvxArgs.push("--with", `litellm==${localLitellmVersion}`);
     } else {
       uvxArgs.push("--with", `git+${LITELLM_GIT_REPO}@${DEFAULT_LITELLM_GIT_REF}`);
@@ -517,7 +529,15 @@ export function buildAgentServerCommand(env = process.env) {
     // PyPI release of litellm instead (model metadata for the V4.1 models will
     // be missing from upstream's map).
     const litellmVersion = env.OH_LITELLM_VERSION;
-    if (litellmVersion) {
+    const litellmPath = env.OH_LITELLM_LOCAL_PATH;
+    if (litellmPath) {
+      if (!path.isAbsolute(litellmPath)) {
+        throw new Error(
+          `OH_LITELLM_LOCAL_PATH must be an absolute path, got: ${litellmPath}`,
+        );
+      }
+      uvxArgs.push("--with", litellmPath);
+    } else if (litellmVersion) {
       uvxArgs.push("--with", `litellm==${litellmVersion}`);
     } else {
       uvxArgs.push("--with", `git+${LITELLM_GIT_REPO}@${DEFAULT_LITELLM_GIT_REF}`);

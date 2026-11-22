@@ -156,6 +156,16 @@ export default function SkillsPluginsScreen() {
             </BrandButton>
           </div>
 
+          {!isLocal && (
+            <div
+              data-testid="plugins-cloud-notice"
+              role="note"
+              className="rounded-xl border border-border bg-surface-raised px-4 py-3 text-sm text-tertiary-light"
+            >
+              {t(I18nKey.SETTINGS$PLUGINS_CLOUD_LOCAL_ONLY)}
+            </div>
+          )}
+
           {isLoading && (
             <div className="flex flex-col gap-4">
               {[1, 2, 3].map((i) => (

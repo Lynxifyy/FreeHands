@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mobile-ui-review",
+  "version": "1.0.0",
+  "description": "Open a web app on a real cloud Android phone, drive it, and capture screenshots as review evidence.",
+  "author": { "name": "FreeHands" },
+  "license": "MIT",
+  "keywords": ["mobile", "android", "screenshot", "testing", "ui", "mobilebox"]
+}

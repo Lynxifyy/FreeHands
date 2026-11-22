@@ -4,6 +4,15 @@ export const CORS_OR_NETWORK_ERROR_MESSAGE =
 export const BACKEND_REQUEST_TIMEOUT_MESSAGE =
   "Disconnected (request timed out). Check that the backend URL is correct and reachable.";
 
+/**
+ * Gemini routed through Vertex AI fails with an opaque
+ * `Vertex_ai_betaException - b''` when the deployment has no Google Cloud
+ * project/credentials (or the model is not enabled in that project). Translate
+ * it into the two things the user can actually do.
+ */
+export const VERTEX_AI_BETA_ERROR_MESSAGE =
+  "Gemini could not reach Vertex AI. If you are using a Google AI Studio key, select the Gemini provider (a gemini/... model) instead of Vertex AI. To use Vertex AI, set the Google Cloud project, location and service-account credentials on the agent server.";
+
 const MAX_CAUSE_DEPTH = 4;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -74,6 +83,18 @@ export function isBackendRequestTimeoutMessage(
   );
 }
 
+export function isVertexAiBetaErrorMessage(
+  message: string | null | undefined,
+): boolean {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("vertex_ai_betaexception") ||
+    normalized.includes("vertex_ai_beta") ||
+    (normalized.includes("vertex") && normalized.includes("b''"))
+  );
+}
+
 export function getUserFacingConnectionErrorMessage(
   error: unknown,
 ): string | null {
@@ -83,6 +104,9 @@ export function getUserFacingConnectionErrorMessage(
   }
   if (messages.some(isBackendRequestTimeoutMessage)) {
     return BACKEND_REQUEST_TIMEOUT_MESSAGE;
+  }
+  if (messages.some(isVertexAiBetaErrorMessage)) {
+    return VERTEX_AI_BETA_ERROR_MESSAGE;
   }
   return messages[0] ?? null;
 }

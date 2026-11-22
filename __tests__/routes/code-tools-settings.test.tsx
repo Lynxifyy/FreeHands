@@ -49,20 +49,22 @@ describe("CodeToolsSettingsScreen", () => {
 
     await user.click(screen.getByTestId("code-tools-preview-allow-scripts"));
 
-    expect(useCodeToolsSettingsStore.getState().previewAllowScripts).toBe(true);
+    expect(useCodeToolsSettingsStore.getState().previewAllowScripts).toBe(
+      false,
+    );
   });
 
   it("resets every preference to its default", async () => {
     const user = userEvent.setup();
     const store = useCodeToolsSettingsStore.getState();
     store.setPreviewAutoRefresh(false);
-    store.setPreviewAllowScripts(true);
+    store.setPreviewAllowScripts(false);
     render(<CodeToolsSettingsScreen />);
 
     await user.click(screen.getByTestId("code-tools-reset"));
 
     const state = useCodeToolsSettingsStore.getState();
     expect(state.previewAutoRefresh).toBe(true);
-    expect(state.previewAllowScripts).toBe(false);
+    expect(state.previewAllowScripts).toBe(true);
   });
 });

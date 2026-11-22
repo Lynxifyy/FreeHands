@@ -1,0 +1,31 @@
+{
+  "name": "freehands-tools",
+  "owner": { "name": "FreeHands" },
+  "description": "Practical, read-only-first plugins for FreeHands/Oli: repository health, release notes, mobile UI review and dependency upgrades.",
+  "plugins": [
+    {
+      "name": "repo-health-audit",
+      "source": "./plugins/repo-health-audit",
+      "description": "Audit a repository's build, tests, lint, TODOs and dependency risk, then write a prioritised health report.",
+      "category": "quality"
+    },
+    {
+      "name": "git-release-notes",
+      "source": "./plugins/git-release-notes",
+      "description": "Turn git history since the last tag into grouped, user-facing release notes.",
+      "category": "release"
+    },
+    {
+      "name": "mobile-ui-review",
+      "source": "./plugins/mobile-ui-review",
+      "description": "Open a web app on a real cloud Android phone, drive it, and capture screenshots as review evidence.",
+      "category": "testing"
+    },
+    {
+      "name": "dependency-upgrade-check",
+      "source": "./plugins/dependency-upgrade-check",
+      "description": "Find outdated and vulnerable dependencies, then prepare a safe, tested upgrade plan.",
+      "category": "quality"
+    }
+  ]
+}

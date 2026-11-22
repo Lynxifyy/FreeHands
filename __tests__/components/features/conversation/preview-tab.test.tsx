@@ -55,7 +55,7 @@ describe("UiPreviewPanel", () => {
     expect(screen.queryByTestId("ui-preview-frame")).not.toBeInTheDocument();
   });
 
-  it("renders an HTML target in a sandboxed iframe with the file content", () => {
+  it("renders an HTML target from the workspace URL so relative assets resolve", () => {
     useUiPreviewStore.getState().setTarget(CONVERSATION, {
       path: "app/index.html",
       format: "html",
@@ -64,8 +64,28 @@ describe("UiPreviewPanel", () => {
     renderPanel();
 
     const frame = screen.getByTestId("ui-preview-frame");
-    expect(frame).toHaveAttribute("sandbox");
-    expect(frame.getAttribute("sandbox")).toBe("");
+    // Scripts are allowed by default, but the iframe stays sandboxed without
+    // allow-same-origin so previewed code cannot reach Canvas state.
+    expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+    expect(frame.getAttribute("src")).toContain("app/index.html");
+  });
+
+  it("falls back to srcdoc when the file is only available as a data URL", () => {
+    useWorkspaceFileContentMock.mockReturnValue(
+      fileContent({
+        text: "<p>hello</p>",
+        staticUrl: "data:text/html;base64,PHN2Zz48L3N2Zz4=",
+      }),
+    );
+    useUiPreviewStore.getState().setTarget(CONVERSATION, {
+      path: "app/index.html",
+      format: "html",
+    });
+
+    renderPanel();
+
+    const frame = screen.getByTestId("ui-preview-frame");
+    expect(frame.getAttribute("src")).toBeNull();
     expect(frame.getAttribute("srcdoc")).toContain("<p>hello</p>");
   });
 
