@@ -190,6 +190,9 @@ RUN if [ -x /acp-node/bin/npm ]; then \
 # react-router.config.ts unpacks build/client/ into build/ for non-Vercel builds.
 COPY --from=frontend-build /build/build /opt/agent-canvas/frontend
 
+# The marketing site ships with the image and is served at /canvas/site/.
+COPY website /opt/agent-canvas/frontend/site
+
 # Copy the static-server scripts and their production runtime deps.
 COPY scripts/static-server.mjs /opt/agent-canvas/static-server.mjs
 COPY scripts/bind-host.mjs /opt/agent-canvas/bind-host.mjs
