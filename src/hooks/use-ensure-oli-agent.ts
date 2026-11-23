@@ -11,38 +11,14 @@ import { isOliAgentProfileName } from "#/constants/oli-agent";
 /**
  * Local-mode UX policy: FreeHands' built-in agent is Oli, so an install that is
  * still on the seeded `default` OpenHands profile is migrated onto the Oli
- * profile once an LLM profile exists. This is what makes Oli the agent that
- * actually answers, instead of the underlying OpenHands persona.
+ * profile once an LLM profile exists. Re-running when the active LLM profile
+ * changes is deliberate: selecting a new model must also move Oli onto that
+ * model, not leave it pinned to a stale profile.
  *
  * Deliberate choices are respected: an active ACP profile or a named custom
- * profile is never replaced. The migration is recorded per backend in
- * `localStorage`, so deleting the Oli profile later does not recreate it on the
- * next load. Cloud is skipped because it does not apply profile persona/tools
- * yet — creating an Oli profile there would only be a label.
+ * profile is never replaced. Cloud is skipped because it does not apply profile
+ * persona/tools yet — creating an Oli profile there would only be a label.
  */
-const STORAGE_PREFIX = "freehands.oli-agent.ensured";
-
-function storageKey(backendId: string): string {
-  return `${STORAGE_PREFIX}.${backendId}`;
-}
-
-function readEnsured(backendId: string): boolean {
-  try {
-    return window.localStorage.getItem(storageKey(backendId)) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function markEnsured(backendId: string): void {
-  try {
-    window.localStorage.setItem(storageKey(backendId), "1");
-  } catch {
-    // Storage unavailable (private mode) — the in-memory ref still prevents a
-    // loop within this session.
-  }
-}
-
 export function useEnsureOliAgent(): void {
   const { backend } = useActiveBackend();
   const isLocal = backend.kind === "local";
@@ -53,16 +29,18 @@ export function useEnsureOliAgent(): void {
   const queryClient = useQueryClient();
   const attemptedRef = useRef<string | null>(null);
 
+  const activeLlmProfile = llmProfiles?.active_profile ?? null;
+  const attemptKey = `${backend.id}:${activeLlmProfile ?? ""}`;
+
   useEffect(() => {
     attemptedRef.current = null;
-  }, [backend.id]);
+  }, [backend.id, activeLlmProfile]);
 
   useEffect(() => {
     if (!isLocal || !llmProfiles || !agentProfiles) return;
     if (agentProfilesError) return;
     if (llmProfiles.profiles.length === 0) return;
-    if (attemptedRef.current === backend.id) return;
-    if (readEnsured(backend.id)) return;
+    if (attemptedRef.current === attemptKey) return;
 
     const active = agentProfiles.profiles.find(
       (profile) =>
@@ -70,8 +48,7 @@ export function useEnsureOliAgent(): void {
         profile.id === agentProfiles.active_agent_profile_id,
     );
     if (active && isOliAgentProfileName(active.name)) {
-      markEnsured(backend.id);
-      attemptedRef.current = backend.id;
+      attemptedRef.current = attemptKey;
       return;
     }
     // Only migrate the baseline / no-selection state. A named custom profile or
@@ -79,15 +56,14 @@ export function useEnsureOliAgent(): void {
     const isBaseline =
       !active || active.name === WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME;
     if (!isBaseline) {
-      markEnsured(backend.id);
+      attemptedRef.current = attemptKey;
       return;
     }
 
-    attemptedRef.current = backend.id;
+    attemptedRef.current = attemptKey;
     void (async () => {
       const result = await ensureOliAgentProfile();
       if (!result.activated) return;
-      markEnsured(backend.id);
       await queryClient.invalidateQueries({
         queryKey: AGENT_PROFILES_QUERY_KEYS.all,
       });
@@ -97,7 +73,7 @@ export function useEnsureOliAgent(): void {
     llmProfiles,
     agentProfiles,
     agentProfilesError,
-    backend.id,
+    attemptKey,
     queryClient,
   ]);
 }

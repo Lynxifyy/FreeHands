@@ -11,6 +11,13 @@ import { useLlmConfigured } from "#/hooks/use-llm-configured";
 import { HOME_PROMPT_DRAFT_KEY } from "#/hooks/chat/use-draft-persistence";
 import { useChatAttachmentUpload } from "#/hooks/chat/use-chat-attachment-upload";
 import { useConversationStore } from "#/stores/conversation-store";
+import { setConversationState } from "#/utils/conversation-local-storage";
+import { FolderKanban } from "lucide-react";
+import { useInRouterContext, useSearchParams } from "react-router";
+import { useProjectsStore } from "#/stores/projects-store";
+import { mergeStoredConversationMetadata } from "#/api/conversation-metadata-store";
+import { useApplyConversationAgentMode } from "#/hooks/use-apply-conversation-agent-mode";
+import { LlmNotConfiguredBanner } from "#/components/features/home/llm-not-configured-banner";
 import type { WorkspaceMode } from "#/api/conversation-metadata-store";
 import { setPendingTaskAttachments } from "#/stores/pending-task-attachments-store";
 import { enqueueHomeTaskPendingMessage } from "#/utils/enqueue-home-task-pending-message";
@@ -49,6 +56,22 @@ import { OpenWorkspaceDialog } from "./open-workspace-dialog";
 import { OpenRepositoryDialog } from "./open-repository-dialog";
 import { HomeGitControlBarPreview } from "./home-git-control-bar-preview";
 
+/**
+ * Reads `?project=` without forcing every caller into a Router. The launcher
+ * is rendered in router-less tests too, so the query reader mounts only when a
+ * router context exists.
+ */
+function ProjectQueryReader({
+  onChange,
+}: {
+  onChange: (projectId: string | null) => void;
+}) {
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get("project");
+  useEffect(() => onChange(projectId), [projectId, onChange]);
+  return null;
+}
+
 export function HomeChatLauncher() {
   const { t } = useTranslation("openhands");
   const { backend } = useActiveBackend();
@@ -68,8 +91,18 @@ export function HomeChatLauncher() {
   const [selectedPlugins, setSelectedPlugins] = useState<PluginSpec[]>([]);
   const [isPluginPickerOpen, setIsPluginPickerOpen] = useState(false);
   const [launcherMode, setLauncherMode] = useState<HomeLauncherMode>("code");
-  const displayedLauncherMode = launcherMode;
-  const isAutomateMode = launcherMode === "automate";
+  const inRouter = useInRouterContext();
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const project = useProjectsStore(
+    (state) => state.projects.find((p) => p.id === projectId) ?? null,
+  );
+  const isProjectMode = project !== null;
+  // A project conversation is always Complex Code: the project is the
+  // deliberate "real engineering work" entry point.
+  const displayedLauncherMode: HomeLauncherMode = isProjectMode
+    ? "complex"
+    : launcherMode;
+  const isAutomateMode = displayedLauncherMode === "automate";
   const handleLauncherModeChange = setLauncherMode;
   const isMountedRef = useRef(true);
 
@@ -90,14 +123,18 @@ export function HomeChatLauncher() {
   const { isConfigured: isLlmConfigured, isLoading: isLlmConfigLoading } =
     useLlmConfigured();
   // Block sending entirely when there's no usable LLM; the banner above the
-  // launcher (rendered by the home route) explains it and offers setup.
-  const llmBlocked = !isLlmConfigLoading && !isLlmConfigured;
+  // launcher explains it and offers setup. Complex Code is exempt: OpenCode is
+  // an ACP agent that owns its own model.
+  const isComplexMode = displayedLauncherMode === "complex";
+  const llmBlocked = !isLlmConfigLoading && !isLlmConfigured && !isComplexMode;
+  const { applyMode } = useApplyConversationAgentMode();
   const {
     images,
     files,
     imagesMarkedUploadAsFile,
     clearAllFiles,
     restoreMessageToInputIfEmpty,
+    setConversationMode,
   } = useConversationStore();
   const { handleUpload } = useChatAttachmentUpload();
   const { error: workspacesError } = useLocalWorkspaces({ enabled: isLocal });
@@ -147,10 +184,13 @@ export function HomeChatLauncher() {
     // (`HOME$ISOLATED_WORKSPACE_NOTICE`) and the user sees an error toast for a
     // selection they may not have noticed. Creation proceeds isolated instead;
     // the launcher still offers an explicit "clear" affordance for the UI.
-    if (isLocal && pendingWorkspace && !isolated) {
+    // A project can pin a workspace; an explicit pick in the composer wins.
+    const projectWorkingDir =
+      isLocal && !isolated ? (project?.workspacePath ?? null) : null;
+    if (isLocal && (pendingWorkspace || projectWorkingDir) && !isolated) {
       variables = {
         ...variables,
-        workingDir: pendingWorkspace.path,
+        workingDir: pendingWorkspace?.path ?? projectWorkingDir ?? undefined,
         workspaceMode,
       };
     } else if (!isLocal && pendingRepository && pendingBranch) {
@@ -186,7 +226,27 @@ export function HomeChatLauncher() {
     void (async () => {
       let isCreated = false;
       try {
-        const data = await createConversation(variables);
+        // Complex Code must land on OpenCode before the conversation is
+        // created: activation is a pointer, and the launch reads it. Passing
+        // the resolved profile id as well removes the race entirely.
+        let launchVariables = variables;
+        if (isComplexMode) {
+          const applied = await applyMode("complex");
+          if (!applied.ok) {
+            toast.dismiss(toastId);
+            displayErrorToast(t(I18nKey.ERROR$GENERIC));
+            return;
+          }
+          if (applied.agentProfileId) {
+            launchVariables = {
+              ...launchVariables,
+              agentProfileId: applied.agentProfileId,
+            };
+          }
+          setConversationMode("complex");
+        }
+
+        const data = await createConversation(launchVariables);
         isCreated = true;
         toast.dismiss(toastId);
         try {
@@ -196,6 +256,16 @@ export function HomeChatLauncher() {
         }
         const targetConversationId = data.conversation_id;
         const isTaskConversation = targetConversationId.startsWith("task-");
+        // Persist the mode with the conversation so reopening it keeps the
+        // Complex Code composer (and its ACP model picker) in place.
+        setConversationState(targetConversationId, {
+          conversationMode: isComplexMode ? "complex" : "code",
+        });
+        if (project) {
+          mergeStoredConversationMetadata(targetConversationId, {
+            projectId: project.id,
+          });
+        }
 
         if (hasAttachments) {
           // Cloud sandboxes provision asynchronously; uploads and the first
@@ -288,17 +358,38 @@ export function HomeChatLauncher() {
       data-testid="home-chat-launcher"
       className="flex w-full flex-col items-center pt-[max(4rem,28vh)] pb-10"
     >
+      {inRouter ? <ProjectQueryReader onChange={setProjectId} /> : null}
       <div className="flex w-full max-w-200 flex-col gap-4 md:px-4">
         <div className="flex w-full justify-center">
           <HomeHeaderTitle />
         </div>
 
-        <div className="flex w-full justify-center">
-          <HomeLauncherModeToggle
-            mode={displayedLauncherMode}
-            onChange={handleLauncherModeChange}
-          />
-        </div>
+        {isProjectMode && project ? (
+          <div className="flex w-full justify-center">
+            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-[13px] text-contrast backdrop-blur">
+              <FolderKanban className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate font-medium">
+                {project.name}
+              </span>
+              <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]">
+                {t(I18nKey.PROJECTS$COMPLEX_BADGE)}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex w-full justify-center">
+            <HomeLauncherModeToggle
+              mode={displayedLauncherMode}
+              onChange={handleLauncherModeChange}
+            />
+          </div>
+        )}
+
+        {llmBlocked ? (
+          <div className="w-full">
+            <LlmNotConfiguredBanner />
+          </div>
+        ) : null}
 
         <div className="w-full">
           <CustomChatInput

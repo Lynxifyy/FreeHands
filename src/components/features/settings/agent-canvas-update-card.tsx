@@ -24,6 +24,7 @@ import {
 } from "#/components/shared/modals/modal-body";
 import { ModalCloseButton } from "#/components/shared/modals/modal-close-button";
 import { useLatestAgentCanvasVersion } from "#/hooks/query/use-latest-agent-canvas-version";
+import { AndroidUpdateSection } from "./android-update-section";
 import DockerIcon from "#/icons/docker.svg?react";
 import NpmIcon from "#/icons/npm.svg?react";
 import { I18nKey } from "#/i18n/declaration";
@@ -347,6 +348,8 @@ export function AgentCanvasUpdateCard({
             <span className="text-contrast">{AGENT_CANVAS_CLIENT_VERSION}</span>
           </span>
         </button>
+
+        <AndroidUpdateSection />
       </section>
 
       {isModalOpen && (

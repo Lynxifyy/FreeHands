@@ -15,6 +15,7 @@ import {
 } from "../event-content-helpers/get-observation-result";
 import {
   isACPToolCallEvent,
+  isActionEvent,
   isObservationEvent,
   isUserRejectObservation,
 } from "#/types/agent-server/type-guards";
@@ -27,6 +28,7 @@ import { getInvokeSkillItems } from "../event-content-helpers/get-invoke-skill-i
 import { SkillReadyContentList } from "./skill-ready-content-list";
 import SkillsIcon from "#/icons/skills.svg?react";
 import { isMarkdownFileEditorEvent } from "#/components/features/chat/tool-visualizers/primitives/markdown-file-preview";
+import { cn } from "#/utils/utils";
 
 interface GenericEventMessageWrapperProps {
   event: OpenHandsEvent | SkillReadyEvent;
@@ -66,8 +68,52 @@ function getSkillKnowledge(
   return null;
 }
 
+type EventPillStatus = "running" | "success" | "error" | "timeout";
+
+function formatDuration(start?: string, end?: string): string | null {
+  if (!start || !end) return null;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)}s`;
+}
+
+function EventStatusPill({ status }: { status: EventPillStatus }) {
+  const { t } = useTranslation("openhands");
+  const label =
+    status === "running"
+      ? t(I18nKey.COMMON$WORKING)
+      : status === "success"
+        ? t(I18nKey.COMMON$FINISHED)
+        : t(I18nKey.COMMON$ERROR);
+
+  return (
+    <span
+      data-testid="event-status-pill"
+      data-status={status}
+      className={cn(
+        "ml-2 inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5",
+        "text-[10px] font-medium uppercase tracking-[0.06em] leading-4",
+        "transition-colors duration-500",
+        status === "running" &&
+          "border-feedback-warning/30 bg-feedback-warning/10 text-feedback-warning",
+        status === "success" &&
+          "border-status-success/30 bg-status-success/10 text-status-success",
+        (status === "error" || status === "timeout") &&
+          "border-status-error/30 bg-status-error/10 text-status-error",
+      )}
+    >
+      {status === "running" ? (
+        <span className="size-1.5 animate-pulse rounded-full bg-current" />
+      ) : null}
+      {label}
+    </span>
+  );
+}
+
 export function GenericEventMessageWrapper({
   event,
+  isLastMessage,
   correspondingAction,
 }: GenericEventMessageWrapperProps) {
   const { t } = useTranslation("openhands");
@@ -91,6 +137,30 @@ export function GenericEventMessageWrapper({
   } else if (isACPToolCallEvent(event)) {
     success = getACPToolCallResult(event);
   }
+
+  // A live tool call gets a status pill and elapsed time, so a long-running
+  // command reads as active and a completed one shows how long it took.
+  let pillStatus: EventPillStatus | undefined;
+  if (!isSkillReadyEvent(event) && isACPToolCallEvent(event)) {
+    pillStatus =
+      event.status === "pending" || event.status === "in_progress"
+        ? "running"
+        : event.status === "failed"
+          ? "error"
+          : "success";
+  } else if (!isSkillReadyEvent(event) && isObservationEvent(event)) {
+    pillStatus = success;
+  } else if (
+    !isSkillReadyEvent(event) &&
+    isActionEvent(event) &&
+    isLastMessage
+  ) {
+    pillStatus = "running";
+  }
+  const duration =
+    !isSkillReadyEvent(event) && isObservationEvent(event)
+      ? formatDuration(correspondingAction?.timestamp, event.timestamp)
+      : null;
 
   // Skill Ready events and invoke-skill tool observations both render the
   // expandable skill-knowledge list (with the skills icon); they differ only in
@@ -120,14 +190,22 @@ export function GenericEventMessageWrapper({
         initiallyExpanded={initiallyExpanded}
         timestamp={event.timestamp}
         titleTrailing={
-          !isSkillReadyEvent(event) && isUserRejectObservation(event) ? (
-            <span
-              data-testid="rejected-indicator"
-              className="ml-2 flex-shrink-0 text-danger"
-            >
-              {t(I18nKey.EVENT$REJECTED)}
-            </span>
-          ) : undefined
+          <>
+            {duration ? (
+              <span className="ml-2 shrink-0 font-mono text-[10px] text-muted">
+                {duration}
+              </span>
+            ) : null}
+            {pillStatus ? <EventStatusPill status={pillStatus} /> : null}
+            {!isSkillReadyEvent(event) && isUserRejectObservation(event) ? (
+              <span
+                data-testid="rejected-indicator"
+                className="ml-2 flex-shrink-0 text-danger"
+              >
+                {t(I18nKey.EVENT$REJECTED)}
+              </span>
+            ) : null}
+          </>
         }
         titleIcon={
           skillKnowledge ? (

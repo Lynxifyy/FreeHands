@@ -9,6 +9,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { mapProvider } from "#/utils/map-provider";
 import { extractModelAndProvider } from "#/utils/extract-model-and-provider";
 import { cn } from "#/utils/utils";
+import { normalizeLlmModelId } from "#/utils/normalize-llm-model";
 import { formControlSettingsFieldClassName } from "#/utils/form-control-classes";
 import { heroUiAutocompleteSelectorButtonClassName } from "#/ui/combobox-caret";
 import { HelpLink } from "#/ui/help-link";
@@ -102,10 +103,10 @@ export function ModelSelector({
   };
 
   const handleChangeModel = (model: string) => {
-    let fullModel = `${selectedProvider}/${model}`;
-    if (selectedProvider === "openai") {
-      fullModel = model;
-    }
+    const fullModel =
+      selectedProvider === "openai"
+        ? model
+        : (normalizeLlmModelId(selectedProvider, model) ?? model);
     setLitellmId(fullModel);
     setSelectedModel(model);
     onChange?.(selectedProvider, model);

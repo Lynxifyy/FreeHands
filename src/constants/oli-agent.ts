@@ -51,7 +51,12 @@ export const OLI_TOOL_SPECS: ProfileToolSpec[] = [
   { name: "file_builder", params: {} },
   { name: "cloud_terminal", params: {} },
   { name: "verify", params: {} },
+  { name: "grep", params: {} },
+  { name: "glob", params: {} },
+  { name: "apply_patch", params: {} },
   { name: "task_tool_set", params: {} },
+  // Filtered out by the server when the runtime has no browser.
+  { name: "browser_tool_set", params: {} },
 ];
 
 export interface BuildOliAgentProfileOptions {

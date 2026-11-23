@@ -10,6 +10,8 @@
 }
 
 @theme inline {
+  /* A crisper shell font stack; the OS picks the best available. */
+  --font-sans: "Inter", "SF Pro Display", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --color-primary: var(--oh-color-primary);
   --color-logo: var(--oh-color-logo);
   --color-discord: var(--oh-color-discord);
@@ -797,4 +799,99 @@ button.extension-module-card-interactive {
 /* Window drag handle for the macOS desktop app's hidden title bar. */
 @utility app-region-drag {
   -webkit-app-region: drag;
+}
+
+/* ── FreeHands shell polish ─────────────────────────────────────────────── */
+
+/* Status play badge: in-progress states shift colour smoothly instead of a
+   flat pulsing dot. Terminal states are static (set in the component). */
+@keyframes status-gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes status-play-pulse {
+  0%, 100% { transform: translateX(1px) scale(1); }
+  50% { transform: translateX(1px) scale(1.22); }
+}
+
+.status-play-gradient {
+  background-image: linear-gradient(
+    135deg,
+    #f59e0b,
+    #ec4899,
+    #6366f1,
+    #22c55e,
+    #f59e0b
+  );
+  background-size: 300% 300%;
+  animation: status-gradient-shift 3.2s ease-in-out infinite;
+}
+
+/* Floating glass sidebar with a slow aurora outline. The glow is drawn on a
+   masked pseudo-element so it never eats pointer events. */
+@keyframes sidebar-aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.sidebar-glass {
+  position: relative;
+  background:
+    linear-gradient(
+      160deg,
+      rgb(255 255 255 / 0.085),
+      rgb(255 255 255 / 0.028) 45%,
+      rgb(255 255 255 / 0.055)
+    );
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  box-shadow:
+    0 24px 70px -34px rgb(0 0 0 / 0.95),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.sidebar-glass::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    rgb(96 165 250 / 0.6),
+    rgb(236 72 153 / 0.35),
+    rgb(34 197 94 / 0.42),
+    rgb(96 165 250 / 0.6)
+  );
+  background-size: 300% 300%;
+  animation: sidebar-aurora 9s ease infinite;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-play-gradient,
+  .sidebar-glass::before {
+    animation: none;
+    background-position: 0 0;
+  }
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: -0.005em;
+  }
 }

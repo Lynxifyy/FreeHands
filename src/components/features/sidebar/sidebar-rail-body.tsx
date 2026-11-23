@@ -3,9 +3,13 @@ import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   ChevronRight,
+  FolderKanban,
+  Plug,
   Plus,
   Server,
   Settings,
+  Sparkles,
+  Wrench,
 } from "lucide-react";
 import { OpenHandsLogoButton } from "#/components/shared/buttons/openhands-logo-button";
 import { NavigationLink } from "#/components/shared/navigation-link";
@@ -29,6 +33,7 @@ import { BackendStatusDot } from "#/components/features/backends/backend-status-
 import { CommandMenuTrigger } from "#/components/features/command-menu/command-menu-trigger";
 import { AgentCanvasVersionTile } from "#/components/features/settings/agent-canvas-version-tile";
 import { SidebarConversationList } from "./sidebar-conversation-list";
+import { SidebarProjectsSection } from "./sidebar-projects-section";
 import { SidebarOnboardingChecklist } from "./sidebar-onboarding-checklist";
 import AutomationsIcon from "#/icons/automations.svg?react";
 import {
@@ -215,6 +220,38 @@ export function SidebarRailBody({
           icon={<Plus width={ICON_SIZE} height={ICON_SIZE} />}
         />
         <SidebarNavLink
+          to="/projects"
+          label={t(I18nKey.SIDEBAR$PROJECTS)}
+          testId="sidebar-projects-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/projects")}
+          icon={<FolderKanban width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/settings/agents"
+          label={t(I18nKey.SIDEBAR$OLI)}
+          testId="sidebar-oli-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/settings/agents")}
+          icon={<Sparkles width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/mcp"
+          label={t(I18nKey.SIDEBAR$MCP_SERVERS)}
+          testId="sidebar-mcp-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/mcp")}
+          icon={<Plug width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
+          to="/settings/code-tools"
+          label={t(I18nKey.SIDEBAR$CODING_TOOLS)}
+          testId="sidebar-coding-tools-link"
+          collapsed={collapsed}
+          forceActive={currentPath.startsWith("/settings/code-tools")}
+          icon={<Wrench width={ICON_SIZE} height={ICON_SIZE} />}
+        />
+        <SidebarNavLink
           to={CUSTOMIZE_PATH}
           label={t(I18nKey.NAV$CUSTOMIZE)}
           testId="sidebar-skills-link"
@@ -284,6 +321,7 @@ export function SidebarRailBody({
         ))}
       </nav>
 
+      <SidebarProjectsSection collapsed={collapsed} />
       <SidebarConversationList collapsed={collapsed} />
 
       {collapsed && showCollapseToggle ? (

@@ -207,8 +207,8 @@ export function Sidebar() {
           setCollapsedRailHovered(false);
         }}
         className={cn(
-          "max-md:hidden flex bg-canvas-base flex-col min-h-0 transition-[width,min-width] duration-200",
-          "md:border-r md:border-border md:h-full",
+          "max-md:hidden flex flex-col min-h-0 transition-[width,min-width,margin,border-radius] duration-300",
+          "sidebar-glass md:my-2 md:ml-2 md:h-[calc(100%-1rem)] md:rounded-2xl",
           collapsed
             ? "md:w-15 md:min-w-15 md:px-2.5"
             : "md:w-75 md:min-w-75 pb-2 md:pl-2.5 md:pr-0",

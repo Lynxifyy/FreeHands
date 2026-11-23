@@ -54,6 +54,12 @@ export interface ConversationMetadata {
    * backends do not, so Canvas stores the relationship here.
    */
   local_planning_conversation_id?: string | null;
+  /**
+   * The project this conversation belongs to. Project conversations always run
+   * Complex Code, so the conversation route reads this to seed the composer
+   * mode.
+   */
+  projectId?: string | null;
 }
 
 export const toPluginCoordinates = (plugin: PluginSpec): PluginSpec => ({

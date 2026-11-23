@@ -1,9 +1,16 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ModelSelector } from "#/components/shared/modals/settings/model-selector";
+import {
+  isGeminiModel,
+  isVertexAiModel,
+  normalizeLlmModelId,
+  toGeminiApiModelId,
+} from "#/utils/normalize-llm-model";
 import { useAgentSettingsSchema } from "#/hooks/query/use-agent-settings-schema";
 import { useSettings } from "#/hooks/query/use-settings";
 import { SettingsInput } from "#/components/features/settings/settings-input";
+import { BrandButton } from "#/components/features/settings/brand-button";
 import { SettingsDropdownInput } from "#/components/features/settings/settings-dropdown-input";
 import { OpenAISubscriptionAuthCard } from "#/components/features/settings/llm-settings/openai-subscription-auth-card";
 import { HelpLink } from "#/ui/help-link";
@@ -54,10 +61,8 @@ const LLM_EXCLUDED_KEYS = new Set([
   LLM_SUBSCRIPTION_VENDOR_KEY,
 ]);
 
-const buildModelId = (provider: string | null, model: string | null) => {
-  if (!provider || !model) return null;
-  return `${provider}/${model}`;
-};
+const buildModelId = (provider: string | null, model: string | null) =>
+  normalizeLlmModelId(provider, model);
 
 const getSchemaFieldDefaultValue = (
   schema: SettingsSchema | null | undefined,
@@ -114,6 +119,38 @@ function OpenHandsApiKeyHelp({ testId }: OpenHandsApiKeyHelpProps) {
       linkText={t(I18nKey.SETTINGS$OPENHANDS_API_KEY_HELP_LINK)}
       suffix={`${t(I18nKey.SETTINGS$OPENHANDS_API_KEY_HELP_SUFFIX)}.`}
     />
+  );
+}
+
+function GeminiVertexNotice({
+  model,
+  onUseGeminiApi,
+}: {
+  model: string;
+  onUseGeminiApi: () => void;
+}) {
+  const { t } = useTranslation("openhands");
+  if (!isVertexAiModel(model) || !isGeminiModel(model)) return null;
+
+  return (
+    <div
+      data-testid="gemini-vertex-warning"
+      role="alert"
+      className="flex flex-col gap-2 rounded-lg border border-feedback-warning/40 bg-feedback-warning/10 px-3 py-2 text-xs text-feedback-warning sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span className="min-w-0">
+        {t(I18nKey.SETTINGS$GEMINI_VERTEX_WARNING)}
+      </span>
+      <BrandButton
+        testId="gemini-use-api"
+        type="button"
+        variant="secondary"
+        className="shrink-0"
+        onClick={onUseGeminiApi}
+      >
+        {t(I18nKey.SETTINGS$GEMINI_USE_API)}
+      </BrandButton>
+    </div>
   );
 }
 
@@ -462,6 +499,13 @@ export function LlmSettingsScreen({
                     isDisabled={isDisabled}
                   />
 
+                  <GeminiVertexNotice
+                    model={modelValue}
+                    onUseGeminiApi={() =>
+                      onChange("llm.model", toGeminiApiModelId(modelValue))
+                    }
+                  />
+
                   {showConnectionSelector ? renderConnectionSelector() : null}
 
                   {isLinkedToConnection || hideInlineCredentials
@@ -497,6 +541,13 @@ export function LlmSettingsScreen({
                     placeholder={defaultModel}
                     onChange={(value) => onChange("llm.model", value)}
                     isDisabled={isDisabled}
+                  />
+
+                  <GeminiVertexNotice
+                    model={modelValue}
+                    onUseGeminiApi={() =>
+                      onChange("llm.model", toGeminiApiModelId(modelValue))
+                    }
                   />
 
                   {showOpenHandsApiKeyHelp && !isLinkedToConnection ? (

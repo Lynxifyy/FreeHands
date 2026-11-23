@@ -17,30 +17,27 @@ export function StartTaskStatusBadge({
     return null;
   }
 
-  // Localized status label — getTaskStatusI18nKey maps every status (including
-  // the terminal READY/ERROR states) to its localized key.
-  const getStatusLabel = () => t(getTaskStatusI18nKey(taskStatus));
-
-  // Get status color
-  const getStatusStyle = () => {
-    switch (taskStatus) {
-      case "READY":
-        return "bg-green-500/10 text-green-400 border-green-500/20";
-      case "ERROR":
-        return "bg-red-500/10 text-red-400 border-red-500/20";
-      default:
-        return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-    }
-  };
+  const label = t(getTaskStatusI18nKey(taskStatus));
 
   return (
     <span
+      data-testid="start-task-status-badge"
+      data-status={taskStatus}
       className={cn(
-        "text-xs font-medium px-2 py-0.5 rounded border flex-shrink-0",
-        getStatusStyle(),
+        "max-w-[11rem] shrink-0 truncate rounded-full border px-2 py-0.5",
+        "text-[10px] font-medium uppercase tracking-[0.08em] leading-4",
+        "transition-colors duration-500",
+        taskStatus === "READY" &&
+          "border-status-success/25 bg-status-success/10 text-status-success",
+        taskStatus === "ERROR" &&
+          "border-status-error/25 bg-status-error/10 text-status-error",
+        taskStatus !== "READY" &&
+          taskStatus !== "ERROR" &&
+          "border-feedback-warning/25 bg-feedback-warning/10 text-feedback-warning",
       )}
+      title={label}
     >
-      {getStatusLabel()}
+      {label}
     </span>
   );
 }

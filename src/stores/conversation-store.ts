@@ -4,6 +4,7 @@ import {
   getConversationState,
   setConversationState,
 } from "#/utils/conversation-local-storage";
+import { getStoredConversationMetadata } from "#/api/conversation-metadata-store";
 
 export type ConversationTab =
   | "files"
@@ -115,6 +116,12 @@ const getInitialConversationMode = (): ConversationMode => {
   const conversationId = getConversationIdFromLocation();
   if (!conversationId) {
     return "code";
+  }
+
+  // A project chat is always Complex Code, even before its composer state has
+  // been written.
+  if (getStoredConversationMetadata(conversationId)?.projectId) {
+    return "complex";
   }
 
   const state = getConversationState(conversationId);

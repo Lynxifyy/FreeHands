@@ -17,16 +17,25 @@ import {
 } from "#/utils/complex-code-agent";
 import type { ConversationMode } from "#/stores/conversation-store";
 
+export interface ApplyConversationModeResult {
+  /** False when neither the profile API nor the settings fallback landed. */
+  ok: boolean;
+  /** The activated profile id, when the backend has agent profiles. */
+  agentProfileId?: string;
+}
+
 /**
  * Move the launch default onto the agent a conversation mode implies: OpenCode
  * for "Complex Code", the built-in agent for "Code". Conversations launch from
- * the active AGENT profile (#1571), so the mode switches an agent profile rather
- * than global settings.
+ * the active AGENT profile (#1571), so the mode switches an agent profile
+ * rather than global settings.
  *
- * Best-effort: on a backend without `/api/agent-profiles` the profile calls
- * fail, so we fall back to writing the equivalent global `agent_settings` diff
- * and only surface a toast when even that fails. "Plan" is a no-op here — its
- * agent is handled by `useHandlePlanClick`.
+ * Returns the activated profile id so a caller that creates a conversation
+ * immediately afterwards can pass it explicitly instead of racing the
+ * activation pointer. Best-effort: on a backend without `/api/agent-profiles`
+ * the profile calls fail, so we fall back to writing the equivalent global
+ * `agent_settings` diff. "Plan" is a no-op here — its agent is handled by
+ * `useHandlePlanClick`.
  */
 export function useApplyConversationAgentMode() {
   const { t } = useTranslation("openhands");
@@ -35,17 +44,18 @@ export function useApplyConversationAgentMode() {
   const { mutateAsync: saveSettings } = useSaveSettings();
 
   const activateProfileByName = useCallback(
-    async (name: string) => {
+    async (name: string): Promise<string | null> => {
       const detail = await AgentProfilesService.getProfile(name);
       const id = detail.profile.id;
       if (id) await activateProfile.mutateAsync(id);
+      return id ?? null;
     },
     [activateProfile],
   );
 
   const applyMode = useCallback(
-    async (mode: ConversationMode) => {
-      if (mode === "plan") return;
+    async (mode: ConversationMode): Promise<ApplyConversationModeResult> => {
+      if (mode === "plan") return { ok: true };
 
       const settingsDiff =
         mode === "complex"
@@ -58,20 +68,32 @@ export function useApplyConversationAgentMode() {
             name: COMPLEX_CODE_PROFILE_NAME,
             profile: complexCodeAgentProfile(),
           });
-          await activateProfileByName(COMPLEX_CODE_PROFILE_NAME);
-        } else {
-          await activateProfileByName(WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME);
+          const id = await activateProfileByName(COMPLEX_CODE_PROFILE_NAME);
+          return { ok: !!id, agentProfileId: id ?? undefined };
         }
+        const id = await activateProfileByName(
+          WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME,
+        );
+        return { ok: !!id, agentProfileId: id ?? undefined };
       } catch {
-        // Older backend without agent profiles — fall back to global settings.
-        if (settingsDiff) {
-          try {
-            await saveSettings({ agent_settings_diff: settingsDiff });
-          } catch (error) {
-            displayErrorToast(
-              retrieveAxiosErrorMessage(error) || t(I18nKey.ERROR$GENERIC),
-            );
-          }
+        // Complex Code must land on the ACP profile: the global-settings
+        // fallback does not move the active profile, so an older backend would
+        // silently launch the native OpenHands agent with its key. Fail loudly
+        // instead of pretending the mode applied.
+        if (mode === "complex") {
+          displayErrorToast(t(I18nKey.ERROR$GENERIC));
+          return { ok: false };
+        }
+        // Code mode can fall back to global settings on an older backend.
+        if (!settingsDiff) return { ok: false };
+        try {
+          await saveSettings({ agent_settings_diff: settingsDiff });
+          return { ok: true };
+        } catch (error) {
+          displayErrorToast(
+            retrieveAxiosErrorMessage(error) || t(I18nKey.ERROR$GENERIC),
+          );
+          return { ok: false };
         }
       }
     },

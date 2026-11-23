@@ -36,6 +36,13 @@ import { parseCommand } from "#/utils/acp-command";
 type ViewMode = "list" | "create" | "edit";
 
 /**
+ * Dropdown sentinel for "follow the account-wide active LLM profile". The
+ * backend still stores a concrete ref, but choosing this option lets the user
+ * detach Oli from a single profile and have Canvas keep the ref in sync.
+ */
+export const USE_ACTIVE_LLM_PROFILE_REF = "__active_llm_profile__";
+
+/**
  * Build the `agent_settings`-shaped seed the embedded {@link AgentSettingsScreen}
  * consumes for an existing profile. The stored ACP command is a shell string;
  * the form's init logic expects a token array, so split it here.
@@ -124,7 +131,7 @@ export function AgentProfilesLocalView() {
     setProfileName("");
     setEditingProfile(null);
     setOverride({ agent_kind: "openhands" });
-    setLlmProfileRef(defaultLlmProfileRef);
+    setLlmProfileRef(defaultLlmProfileRef ? USE_ACTIVE_LLM_PROFILE_REF : "");
     setSaveControl(null);
     setViewMode("create");
   }, [defaultLlmProfileRef]);
@@ -154,8 +161,16 @@ export function AgentProfilesLocalView() {
           const refIsLive =
             isLlmProfilesLoading ||
             llmProfiles.some((p) => p.name === profile.llm_profile_ref);
+          const resolvedRef = refIsLive
+            ? profile.llm_profile_ref
+            : defaultLlmProfileRef;
+          // A ref that already points at the active LLM profile is shown as
+          // "follow active", so the user can see it is not pinned to a stale
+          // choice and can re-pick a concrete profile at any time.
           setLlmProfileRef(
-            refIsLive ? profile.llm_profile_ref : defaultLlmProfileRef,
+            defaultLlmProfileRef && resolvedRef === defaultLlmProfileRef
+              ? USE_ACTIVE_LLM_PROFILE_REF
+              : resolvedRef,
           );
         } else {
           setLlmProfileRef("");
@@ -188,11 +203,15 @@ export function AgentProfilesLocalView() {
     try {
       const fields = saveControl.buildAgentProfileFields();
       if (fields.agent_kind === "openhands") {
-        if (!llmProfileRef) {
+        const resolvedLlmRef =
+          llmProfileRef === USE_ACTIVE_LLM_PROFILE_REF
+            ? defaultLlmProfileRef
+            : llmProfileRef;
+        if (!resolvedLlmRef) {
           displayErrorToast(t(I18nKey.SETTINGS$AGENT_PROFILE_LLM_REQUIRED));
           return;
         }
-        input = { ...fields, llm_profile_ref: llmProfileRef };
+        input = { ...fields, llm_profile_ref: resolvedLlmRef };
       } else {
         input = fields as AgentProfileSaveInput;
       }
@@ -286,8 +305,12 @@ export function AgentProfilesLocalView() {
     editingProfile?.agent_kind === "openhands"
       ? editingProfile.llm_profile_ref
       : "";
+  const loadedLlmSelection =
+    defaultLlmProfileRef && loadedLlmRef === defaultLlmProfileRef
+      ? USE_ACTIVE_LLM_PROFILE_REF
+      : loadedLlmRef;
   const llmRefDirty =
-    viewMode === "edit" && isOpenHands && llmProfileRef !== loadedLlmRef;
+    viewMode === "edit" && isOpenHands && llmProfileRef !== loadedLlmSelection;
   const hasUnsavedChanges =
     viewMode === "create" ||
     Boolean(saveControl?.isDirty) ||
@@ -344,10 +367,16 @@ export function AgentProfilesLocalView() {
             testId="agent-profile-llm-selector"
             name="agent-profile-llm"
             label={t(I18nKey.SETTINGS$AGENT_PROFILE_LLM_LABEL)}
-            items={llmProfiles.map((p) => ({
-              key: p.name,
-              label: p.model ? `${p.name} (${p.model})` : p.name,
-            }))}
+            items={[
+              {
+                key: USE_ACTIVE_LLM_PROFILE_REF,
+                label: t(I18nKey.SETTINGS$AGENT_PROFILE_USE_ACTIVE_LLM),
+              },
+              ...llmProfiles.map((p) => ({
+                key: p.name,
+                label: p.model ? `${p.name} (${p.model})` : p.name,
+              })),
+            ]}
             selectedKey={llmProfileRef}
             onSelectionChange={(key) => key && setLlmProfileRef(String(key))}
           />

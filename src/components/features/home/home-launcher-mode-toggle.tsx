@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
+import SparkleIcon from "#/icons/sparkle.svg?react";
 
-export type HomeLauncherMode = "code" | "automate";
+export type HomeLauncherMode = "code" | "complex" | "automate";
 
 interface HomeLauncherModeToggleProps {
   mode: HomeLauncherMode;
@@ -125,6 +126,23 @@ export function HomeLauncherModeToggle({
       ),
     },
     {
+      value: "complex",
+      label: t(I18nKey.COMMON$COMPLEX_CODE),
+      icon: (active) => (
+        <motion.span
+          animate={
+            active && !disableAnimation
+              ? { rotate: [0, 14, -10, 0], scale: [1, 1.15, 1] }
+              : { rotate: 0, scale: 1 }
+          }
+          transition={{ duration: 0.7, ease: "easeInOut" }}
+          className="inline-flex"
+        >
+          <SparkleIcon className="size-4" />
+        </motion.span>
+      ),
+    },
+    {
       value: "automate",
       label: t(I18nKey.AUTOMATE$SECTION_TITLE),
       icon: (active) => <AutomateClockIcon active={active} />,
@@ -138,7 +156,7 @@ export function HomeLauncherModeToggle({
           role="radiogroup"
           aria-label={t(I18nKey.HOME$MODE_TOGGLE_LABEL)}
           data-testid="home-launcher-mode-toggle"
-          className="inline-flex items-center rounded-full bg-[var(--oh-surface-raised)] p-1 text-sm font-medium"
+          className="inline-flex items-center rounded-full bg-[var(--oh-surface-raised)] p-1 text-[13px] font-medium"
         >
           {options.map((option) => {
             const isActive = option.value === mode;
@@ -151,7 +169,7 @@ export function HomeLauncherModeToggle({
                 data-testid={`home-launcher-mode-${option.value}`}
                 onClick={() => onChange(option.value)}
                 className={cn(
-                  "relative inline-flex items-center gap-2 rounded-full px-5 py-2",
+                  "relative inline-flex items-center gap-2 rounded-full px-4 py-1.5",
                   "cursor-pointer transition-colors",
                   // @spec HL-001 — Labels on the hover pill use the theme's high-emphasis ink
                   isActive
