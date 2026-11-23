@@ -13,17 +13,15 @@ export function TaskListSection({ taskList }: TaskListSectionProps) {
   const { t } = useTranslation("openhands");
 
   return (
-    <div className="flex flex-col overflow-clip bg-surface border border-border rounded-xl w-full">
-      {/* Header Tabs */}
-      <div className="flex gap-1 items-center border-b border-border h-10.25 px-2 shrink-0">
-        <LessonPlanIcon className="shrink-0 w-4.5 h-4.5 text-muted" />
-        <Typography.Text className="text-[11px] text-nowrap text-contrast tracking-[0.11px] font-medium leading-4 whitespace-pre">
+    <div className="flex w-full flex-col overflow-clip rounded-2xl border border-border/70 bg-surface">
+      <div className="flex h-10 items-center gap-2 border-b border-border/60 bg-[linear-gradient(90deg,rgba(59,130,246,0.14),rgba(168,85,247,0.14),rgba(236,72,153,0.1))] px-3">
+        <LessonPlanIcon className="h-4 w-4 shrink-0 text-logo" />
+        <Typography.Text className="bg-gradient-to-r from-sky-400 via-violet-400 to-pink-400 bg-clip-text text-[11px] font-semibold tracking-wide text-transparent">
           {t(I18nKey.COMMON$TASKS)}
         </Typography.Text>
       </div>
 
-      {/* Task Items */}
-      <div>
+      <div className="flex flex-col gap-1.5 p-2">
         {taskList.map((task, index) => (
           <TaskItem key={`task-${index}`} task={task} />
         ))}

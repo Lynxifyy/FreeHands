@@ -8,6 +8,7 @@ import {
 } from "@openhands/extensions/skills";
 import type { LucideIcon } from "lucide-react";
 import { MANIFEST_ICON_BY_SLUG } from "#/components/features/manifest/manifest-icons";
+import { FREEHANDS_AUTOMATION_PROMPTS } from "#/constants/freehands-automations";
 import { interpolateValues } from "#/manifests/manifest-template";
 import type { Automation } from "#/types/automation";
 
@@ -93,6 +94,7 @@ export function getAutomationLaunchPrompt(
 ): string {
   return (
     findAutomationCommand(automation) ??
+    FREEHANDS_AUTOMATION_PROMPTS[automation.id] ??
     `Set up the ${automation.name} automation`
   );
 }

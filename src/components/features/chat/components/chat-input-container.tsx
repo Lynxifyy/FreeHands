@@ -68,56 +68,61 @@ export function ChatInputContainer({
 
   return (
     <div
-      ref={chatContainerRef}
       className={cn(
-        "bg-surface box-border content-stretch flex flex-col items-start justify-center p-4 relative rounded-[15px] w-full",
-        conversationMode === "plan" && "border border-[#597FF4]",
+        "composer-aurora w-full",
+        conversationMode === "plan" &&
+          "outline outline-2 outline-offset-2 outline-[#597FF4]",
       )}
-      onDragOver={(e) => onDragOver(e, disabled)}
-      onDragLeave={(e) => onDragLeave(e, disabled)}
-      onDrop={(e) => onDrop(e, disabled)}
     >
-      {/* Drag Over UI */}
-      {isDragOver && <DragOver />}
+      <div
+        ref={chatContainerRef}
+        className="bg-surface box-border content-stretch flex flex-col items-start justify-center p-4 relative rounded-[16px] w-full"
+        onDragOver={(e) => onDragOver(e, disabled)}
+        onDragLeave={(e) => onDragLeave(e, disabled)}
+        onDrop={(e) => onDrop(e, disabled)}
+      >
+        {/* Drag Over UI */}
+        {isDragOver && <DragOver />}
 
-      <UploadedFiles />
+        <UploadedFiles />
 
-      {/* Wrapper so the slash menu anchors just above the input row,
+        {/* Wrapper so the slash menu anchors just above the input row,
           not above the entire (possibly resized) container */}
-      <div className="relative w-full">
-        {isSlashMenuOpen && onSlashSelect && (
-          <SlashCommandMenu
-            items={slashItems}
-            selectedIndex={slashSelectedIndex}
-            onSelect={onSlashSelect}
-          />
-        )}
+        <div className="relative w-full">
+          {isSlashMenuOpen && onSlashSelect && (
+            <SlashCommandMenu
+              items={slashItems}
+              selectedIndex={slashSelectedIndex}
+              onSelect={onSlashSelect}
+            />
+          )}
 
-        <ChatInputRow
-          chatInputRef={chatInputRef}
-          isNewConversationPending={isNewConversationPending}
-          placeholder={placeholder}
-          onInput={onInput}
-          onPaste={onPaste}
-          onKeyDown={onKeyDown}
-          onFocus={onFocus}
-          onBlur={onBlur}
+          <ChatInputRow
+            chatInputRef={chatInputRef}
+            isNewConversationPending={isNewConversationPending}
+            placeholder={placeholder}
+            onInput={onInput}
+            onPaste={onPaste}
+            onKeyDown={onKeyDown}
+            onFocus={onFocus}
+            onBlur={onBlur}
+          />
+        </div>
+
+        <ChatInputActions
+          disabled={disabled}
+          canSubmit={canSubmit}
+          hasStartedConversation={hasStartedConversation}
+          onAddFileClick={() => handleFileIconClick(disabled)}
+          showButton={showButton}
+          buttonClassName={buttonClassName}
+          handleSubmit={handleSubmit}
+          onDictationTranscript={(text) =>
+            insertTextAtCaret(chatInputRef.current, text)
+          }
+          isDictationDisabled={isNewConversationPending}
         />
       </div>
-
-      <ChatInputActions
-        disabled={disabled}
-        canSubmit={canSubmit}
-        hasStartedConversation={hasStartedConversation}
-        onAddFileClick={() => handleFileIconClick(disabled)}
-        showButton={showButton}
-        buttonClassName={buttonClassName}
-        handleSubmit={handleSubmit}
-        onDictationTranscript={(text) =>
-          insertTextAtCaret(chatInputRef.current, text)
-        }
-        isDictationDisabled={isNewConversationPending}
-      />
     </div>
   );
 }

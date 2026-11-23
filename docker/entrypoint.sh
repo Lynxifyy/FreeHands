@@ -349,12 +349,16 @@ fi
 if command -v uvicorn >/dev/null 2>&1; then
   uvicorn openhands.automation.app:app \
     --host 0.0.0.0 \
-    --port "$AUTOMATION_PORT" &
+    --port "$AUTOMATION_PORT" \
+    --timeout-keep-alive 75 \
+    --backlog 2048 &
   PIDS+=($!)
 elif python -c "import openhands.automation" 2>/dev/null; then
   python -m uvicorn openhands.automation.app:app \
     --host 0.0.0.0 \
-    --port "$AUTOMATION_PORT" &
+    --port "$AUTOMATION_PORT" \
+    --timeout-keep-alive 75 \
+    --backlog 2048 &
   PIDS+=($!)
 else
   log "WARNING: Automation server not found, skipping."

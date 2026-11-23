@@ -28,6 +28,10 @@ import { useActiveBackendContext } from "#/contexts/active-backend-context";
 import { useBackendsHealth } from "#/hooks/query/use-backends-health";
 import { useTracking } from "#/hooks/use-tracking";
 import type { CloudConnectionSource } from "#/services/cloud-funnel-analytics";
+import {
+  FREEHANDS_CLOUD_HOST,
+  FREEHANDS_CLOUD_NAME,
+} from "#/constants/freehands-cloud";
 import { getAgentServerClientOptions } from "#/api/agent-server-client-options";
 import { getLockedCloudHost } from "#/api/agent-server-config";
 import { isOpenHandsCloudHost } from "#/api/device-flow-client";
@@ -155,7 +159,7 @@ function isValidHostUrl(host: string): boolean {
   }
 }
 
-const DEFAULT_OPENHANDS_CLOUD_HOST = "https://app.all-hands.dev";
+const DEFAULT_OPENHANDS_CLOUD_HOST = FREEHANDS_CLOUD_HOST;
 const LOCAL_BACKEND_COMMAND = "agent-canvas --backend-only --port 8001";
 const LOCAL_AGENT_SERVER_DOCS_URL =
   "https://github.com/OpenHands/OpenHands/blob/main/docs/DEVELOPMENT.md#alternative-development-workflows";
@@ -985,7 +989,7 @@ function CloudLoginColumn({
   const handleLoginSuccess = (apiKey: string) => {
     onConnected(
       {
-        name: "OpenHands Cloud",
+        name: FREEHANDS_CLOUD_NAME,
         host: normalizeHost(effectiveHost),
         apiKey,
         kind: "cloud",

@@ -305,16 +305,157 @@ function analyzeKotlin(input: AnalyzeInput): CritiqueIssue[] {
   return issues;
 }
 
+const HASH_COMMENT_LANGUAGES = new Set([
+  "python",
+  "shell",
+  "ruby",
+  "perl",
+  "yaml",
+  "toml",
+  "r",
+]);
+
+/** Blank out comments and string literals so delimiter counts are meaningful. */
+function stripCodeStringsAndComments(
+  content: string,
+  language: string,
+): string {
+  let text = content.replace(/\/\*[\s\S]*?\*\//g, " ");
+  if (HASH_COMMENT_LANGUAGES.has(language)) {
+    text = text.replace(/(^|[^:"'])#[^\n]*/g, "$1 ");
+  } else {
+    text = text.replace(/\/\/[^\n]*/g, " ");
+  }
+  return text
+    .replace(/"""[\s\S]*?"""/g, '""')
+    .replace(/'''[\s\S]*?'''/g, "''")
+    .replace(/`(?:[^`\\]|\\.)*`/g, "``")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''");
+}
+
+/** Languages whose syntax is delimiter-structured (braces / parens / brackets). */
+const DELIMITER_LANGUAGES = new Set([
+  "typescript",
+  "javascript",
+  "java",
+  "c",
+  "cpp",
+  "csharp",
+  "go",
+  "rust",
+  "php",
+  "ruby",
+  "swift",
+  "css",
+  "dart",
+  "scala",
+  "groovy",
+  "lua",
+  "luau",
+  "sql",
+  "vue",
+  "svelte",
+  "shell",
+  "perl",
+  "r",
+]);
+
+/**
+ * Balance check shared by every delimiter-structured language. This is the
+ * generic "that won't even parse" gate: an unmatched brace, parenthesis or
+ * bracket is always a real error, so it is safe to report without knowing the
+ * language's full grammar.
+ */
+function analyzeDelimiters(input: AnalyzeInput): CritiqueIssue[] {
+  const code = stripCodeStringsAndComments(input.content, input.language);
+  const issues: CritiqueIssue[] = [];
+  for (const [open, close, label] of [
+    ["{", "}", "braces"],
+    ["(", ")", "parentheses"],
+    ["[", "]", "brackets"],
+  ] as const) {
+    const opened = countChar(code, open);
+    const closed = countChar(code, close);
+    if (opened !== closed) {
+      issues.push({
+        rule: `${input.language}/unbalanced-delimiters`,
+        severity: "error",
+        category: "syntax",
+        message: `Unbalanced ${label}: ${opened} '${open}' vs ${closed} '${close}'.`,
+        hint: `Add or remove a '${open}' / '${close}' so they match; the file will not parse as-is.`,
+      });
+    }
+  }
+  return issues;
+}
+
+function analyzeJson(input: AnalyzeInput): CritiqueIssue[] {
+  try {
+    JSON.parse(input.content);
+    return [];
+  } catch (error) {
+    return [
+      {
+        rule: "json/invalid",
+        severity: "error",
+        category: "syntax",
+        message: `Invalid JSON: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        hint: "Fix the syntax (trailing commas, quotes, brackets) so the file parses.",
+      },
+    ];
+  }
+}
+
+/** Language-specific leftovers that are cheap to detect and always worth fixing. */
+function analyzeCodeSmells(input: AnalyzeInput): CritiqueIssue[] {
+  const issues: CritiqueIssue[] = [];
+  if (input.language === "typescript" || input.language === "javascript") {
+    const debuggerMatch = /\bdebugger\s*;/.exec(input.content);
+    if (debuggerMatch) {
+      issues.push({
+        rule: "js/debugger-statement",
+        severity: "warning",
+        category: "completeness",
+        message: "A `debugger;` statement is left in the source.",
+        line: lineOf(input.content, debuggerMatch.index),
+        hint: "Remove it before shipping.",
+      });
+    }
+  }
+  if (input.language === "python") {
+    const bareExcept = /except\s*:\s*\n\s*(pass|\.\.\.)\b/.exec(input.content);
+    if (bareExcept) {
+      issues.push({
+        rule: "python/silent-except",
+        severity: "warning",
+        category: "completeness",
+        message: "A bare `except:` swallows every error silently.",
+        line: lineOf(input.content, bareExcept.index),
+        hint: "Catch a specific exception and handle or log it.",
+      });
+    }
+  }
+  return issues;
+}
+
 export function analyzeCode(input: AnalyzeInput): CritiqueIssue[] {
   const completeness = analyzeCompleteness(input);
+  const smells = analyzeCodeSmells(input);
   switch (input.language) {
     case "html":
-      return [...analyzeHtml(input), ...completeness];
+      return [...analyzeHtml(input), ...completeness, ...smells];
     case "xml":
-      return [...analyzeXml(input), ...completeness];
+      return [...analyzeXml(input), ...completeness, ...smells];
     case "kotlin":
-      return [...analyzeKotlin(input), ...completeness];
+      return [...analyzeKotlin(input), ...completeness, ...smells];
+    case "json":
+      return [...analyzeJson(input), ...completeness, ...smells];
     default:
-      return completeness;
+      return DELIMITER_LANGUAGES.has(input.language)
+        ? [...analyzeDelimiters(input), ...completeness, ...smells]
+        : [...completeness, ...smells];
   }
 }

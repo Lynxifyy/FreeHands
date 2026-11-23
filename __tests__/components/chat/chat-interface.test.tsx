@@ -963,7 +963,7 @@ describe("ChatInterface - Status Indicator", () => {
       thinking_blocks: [],
       action: {
         kind: "TerminalAction",
-        command: "git status",
+        command: "ls -la",
         is_input: false,
         timeout: null,
         reset: false,

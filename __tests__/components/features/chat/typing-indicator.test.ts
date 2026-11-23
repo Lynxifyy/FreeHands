@@ -106,7 +106,7 @@ describe("deriveLiveActivity", () => {
       name: "terminal command",
       action: {
         kind: "TerminalAction",
-        command: "git status",
+        command: "ls -la",
         is_input: false,
         timeout: null,
         reset: false,
@@ -114,7 +114,37 @@ describe("deriveLiveActivity", () => {
       expected: {
         kind: "translation",
         key: "ACTION_MESSAGE$RUN",
-        values: { command: "git status" },
+        values: { command: "ls -la" },
+      },
+    },
+    {
+      name: "git phase",
+      action: {
+        kind: "TerminalAction",
+        command: "git status",
+        is_input: false,
+        timeout: null,
+        reset: false,
+      } satisfies Action,
+      expected: {
+        kind: "translation",
+        key: "ACTION_MESSAGE$GIT_OP",
+        values: {},
+      },
+    },
+    {
+      name: "test phase",
+      action: {
+        kind: "TerminalAction",
+        command: "npm test -- --run",
+        is_input: false,
+        timeout: null,
+        reset: false,
+      } satisfies Action,
+      expected: {
+        kind: "translation",
+        key: "ACTION_MESSAGE$RUN_TESTS",
+        values: {},
       },
     },
     {
@@ -178,8 +208,8 @@ describe("deriveLiveActivity", () => {
 
     expect(deriveLiveActivity([first, second, secondObservation])).toEqual({
       kind: "translation",
-      key: "ACTION_MESSAGE$RUN",
-      values: { command: "npm test" },
+      key: "ACTION_MESSAGE$RUN_TESTS",
+      values: {},
     });
     expect(
       deriveLiveActivity([first, second, secondObservation, firstObservation]),
@@ -232,8 +262,8 @@ describe("deriveLiveActivity", () => {
       ]),
     ).toEqual({
       kind: "translation",
-      key: "ACTION_MESSAGE$RUN",
-      values: { command: "git status" },
+      key: "ACTION_MESSAGE$GIT_OP",
+      values: {},
     });
   });
 

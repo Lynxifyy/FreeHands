@@ -23,7 +23,14 @@ import { useConversationId } from "#/hooks/use-conversation-id";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { useHomeStore } from "#/stores/home-store";
 import { useOptimisticUserMessageStore } from "#/stores/optimistic-user-message-store";
-import { getStoredConversationMetadata } from "#/api/conversation-metadata-store";
+import {
+  getStoredConversationMetadata,
+  mergeStoredConversationMetadata,
+} from "#/api/conversation-metadata-store";
+import {
+  GitControlBarAddRepositoryButton,
+  GitControlBarExtraRepositoryChip,
+} from "./git-control-bar-extra-repos";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useUserProviders } from "#/hooks/use-user-providers";
 import { useOptionalScrollContext } from "#/context/scroll-context";
@@ -36,6 +43,7 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
   const { t } = useTranslation("openhands");
   const { conversationId } = useConversationId();
   const [isOpenRepoModalOpen, setIsOpenRepoModalOpen] = useState(false);
+  const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const workspaceMenuContainerRef = useRef<HTMLDivElement>(null);
   const { addRecentRepository } = useHomeStore();
@@ -96,6 +104,7 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
   const storedMetadata = conversation?.id
     ? getStoredConversationMetadata(conversation.id)
     : null;
+  const extraRepositories = storedMetadata?.extra_repositories ?? [];
   const workspacePath = storedMetadata?.selected_workspace ?? null;
   const workspaceName = workspacePath
     ? workspacePath.replace(/\/+$/, "").split("/").pop() || null
@@ -204,6 +213,66 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
     );
   };
 
+  // A conversation has one primary repository (the agent-server field), so
+  // adding another one means asking the agent to clone it beside the first.
+  // The extras are recorded locally so the bar can show what was added.
+  const handleAddRepository = (repository: GitRepository, branch: Branch) => {
+    if (!conversationId) return;
+
+    const directory = repository.full_name.replace(/[^A-Za-z0-9._-]+/g, "__");
+    const providerName =
+      repository.git_provider.charAt(0).toUpperCase() +
+      repository.git_provider.slice(1);
+    const clonePrompt =
+      `Clone ${repository.full_name} from ${providerName} and checkout branch ` +
+      `${branch.name} as an additional repository in this workspace at ` +
+      `./repos/${directory}. Do not replace, move or modify the existing ` +
+      `repository; keep its files and git state intact.`;
+
+    mergeStoredConversationMetadata(conversationId, {
+      extra_repositories: [
+        ...extraRepositories.filter(
+          (entry) => entry.full_name !== repository.full_name,
+        ),
+        {
+          full_name: repository.full_name,
+          branch: branch.name,
+          git_provider: repository.git_provider,
+        },
+      ],
+    });
+    addRecentRepository(repository);
+
+    if (webSocketStatusRef.current !== "OPEN") {
+      displayErrorToast(
+        t(I18nKey.CONVERSATION$CLONE_COMMAND_FAILED_DISCONNECTED),
+      );
+      return;
+    }
+
+    const pendingId = enqueuePendingMessage({
+      conversationId,
+      text: clonePrompt,
+    });
+    scrollContext?.scrollDomToBottom();
+    Promise.resolve(
+      sendRef.current({
+        action: "message",
+        args: {
+          content: clonePrompt,
+          timestamp: new Date().toISOString(),
+        },
+      }),
+    ).catch((error) => {
+      if (!pendingId) return;
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : t(I18nKey.CHAT_INTERFACE$FAILED_TO_SEND_MESSAGE);
+      markPendingMessageError(pendingId, errorMessage);
+    });
+  };
+
   // Local backends never use the remote-repo "Connect Repo" CTA, so suppress the
   // empty-state button there. A repo or workspace label inferred from local git
   // metadata is still informational and stays visible.
@@ -233,6 +302,20 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
             workspaceName={workspaceName}
             onClick={() => setIsOpenRepoModalOpen(true)}
             disabled={!isConversationReady || isRepoButtonInert}
+          />
+        ) : null}
+
+        {extraRepositories.map((repository) => (
+          <GitControlBarExtraRepositoryChip
+            key={repository.full_name}
+            repository={repository.full_name}
+          />
+        ))}
+
+        {hasRepository ? (
+          <GitControlBarAddRepositoryButton
+            onClick={() => setIsAddRepoModalOpen(true)}
+            disabled={!isConversationReady}
           />
         ) : null}
 
@@ -307,6 +390,12 @@ export function GitControlBar({ onSuggestionsClick }: GitControlBarProps) {
         isOpen={isOpenRepoModalOpen}
         onClose={() => setIsOpenRepoModalOpen(false)}
         onLaunch={handleLaunchRepository}
+        defaultProvider={gitProvider}
+      />
+      <OpenRepositoryModal
+        isOpen={isAddRepoModalOpen}
+        onClose={() => setIsAddRepoModalOpen(false)}
+        onLaunch={handleAddRepository}
         defaultProvider={gitProvider}
       />
     </div>

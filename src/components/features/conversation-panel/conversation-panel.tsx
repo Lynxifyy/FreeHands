@@ -33,6 +33,7 @@ import { ConversationCardPreview } from "./conversation-card/conversation-card-p
 import { StartTaskCard } from "./start-task-card/start-task-card";
 import { ConversationCardSkeleton } from "./conversation-card/conversation-card-skeleton";
 import { CompactConversationRow } from "./compact-conversation-row";
+import { useMiniWindowStore } from "#/stores/mini-window-store";
 import { useConversationPanelPreferencesStore } from "#/stores/conversation-panel-preferences-store";
 import { cn } from "#/utils/utils";
 import { ConversationLayoutsMenu } from "./conversation-layouts-menu";
@@ -961,6 +962,12 @@ export function ConversationPanel({
               onChangeTitle={(title) =>
                 handleConversationTitleChange(conversation.id, title)
               }
+              onOpenMiniWindow={() =>
+                useMiniWindowStore.getState().open({
+                  conversationId: conversation.id,
+                  title: conversation.title ?? "",
+                })
+              }
               title={conversation.title ?? ""}
               selectedRepository={{
                 selected_repository: conversation.selected_repository,
@@ -1234,7 +1241,7 @@ export function ConversationPanel({
         {!showInitialSkeleton &&
         !compact &&
         organizeMode === "chronological" ? (
-          <div className="space-y-0.5">
+          <div className="space-y-1.5">
             {sortedVisibleConversations.map((conversation) =>
               renderConversationCard(conversation),
             )}

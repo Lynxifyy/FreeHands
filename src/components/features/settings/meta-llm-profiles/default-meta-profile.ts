@@ -1,7 +1,7 @@
 import type { MetaProfile } from "#/api/meta-profiles-service/meta-profiles-service.api";
 
-export const DEFAULT_ROUTER_PRO_META_PROFILE_NAME = "openhands-router-pro";
-export const DEFAULT_ROUTER_FLASH_META_PROFILE_NAME = "openhands-router-flash";
+export const DEFAULT_ROUTER_PRO_META_PROFILE_NAME = "freehands-router-pro";
+export const DEFAULT_ROUTER_FLASH_META_PROFILE_NAME = "freehands-router-flash";
 
 export const DEFAULT_ROUTER_PRO_META_PROFILE_MODEL_TABLE = `- gpt-5.4: swe-bench: 75.60%/$0.63; swt-bench: 70.40%/$0.47; swe-bench-multimodal: 36.80%/$1.45; commit0: 56.20%/$4.04; gaia: 82.40%/$0.61
 - gpt-5.5: swe-bench: 78.20%/$1.52; swt-bench: 83.40%/$0.92; swe-bench-multimodal: 38.20%/$2.81; commit0: 43.80%/$5.56; gaia: 86.10%/$0.74

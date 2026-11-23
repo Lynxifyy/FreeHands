@@ -68,6 +68,18 @@ class AgentProfilesService {
     ).listAgentProfiles();
   }
 
+  /**
+   * Dry-run a profile without launching it. The report names every dangling
+   * reference, which is what turns an opaque "error occurred" launch into an
+   * actionable message.
+   */
+  static async materializeProfile(name: string) {
+    if (isCloud()) return null;
+    return new AgentProfilesClient(
+      getAgentServerClientOptions(),
+    ).materializeAgentProfile(name);
+  }
+
   static async getProfile(
     name: string,
     exposeSecrets?: ExposeSecretsMode,

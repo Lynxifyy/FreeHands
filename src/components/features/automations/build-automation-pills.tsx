@@ -2,7 +2,7 @@ import FolderIcon from "#/icons/folder.svg?react";
 import ClockIcon from "#/icons/clock.svg?react";
 import SparkleIcon from "#/icons/sparkle.svg?react";
 import { Plug, Zap } from "lucide-react";
-import { INTEGRATION_CATALOG as MCP_MARKETPLACE } from "@openhands/extensions/integrations";
+import { MCP_MARKETPLACE } from "#/constants/mcp-marketplace";
 import type { SkillCardPill } from "#/components/features/skills/skill-card-pill-row";
 import { McpLogoBadge } from "#/components/features/mcp-logo-badge";
 import type { Automation } from "#/types/automation";

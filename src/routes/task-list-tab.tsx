@@ -57,8 +57,9 @@ function TaskRow({
       data-active={task.status === "in_progress" ? "true" : "false"}
       data-current={isCurrent ? "true" : "false"}
       className={cn(
-        "flex flex-col gap-0.5 rounded px-4 py-2",
-        isCurrent && "bg-surface-raised",
+        "flex flex-col gap-1 rounded-2xl border border-transparent px-3 py-2 transition-colors",
+        isCurrent &&
+          "border-white/10 bg-[linear-gradient(135deg,rgba(59,130,246,0.16),rgba(168,85,247,0.16),rgba(236,72,153,0.12))]",
       )}
     >
       {isCurrent && (

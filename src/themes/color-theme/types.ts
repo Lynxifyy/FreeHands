@@ -5,7 +5,11 @@ export type ColorThemeKey =
   | "openhands-neutral"
   | "openhands-neo"
   | "light-plus"
-  | "solarized-light";
+  | "solarized-light"
+  | "freehands-aurora"
+  | "freehands-sakura"
+  | "freehands-neon"
+  | "freehands-dawn";
 
 export type ColorThemeAppearance = "dark" | "light";
 

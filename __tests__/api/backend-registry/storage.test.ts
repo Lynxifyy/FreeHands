@@ -7,6 +7,7 @@ import {
   writeStoredActiveBackend,
   writeStoredBackends,
 } from "#/api/backend-registry/storage";
+import { FREEHANDS_CLOUD_NAME } from "#/constants/freehands-cloud";
 import type { Backend } from "#/api/backend-registry/types";
 
 const ORIGINAL_LOCATION = window.location;
@@ -107,7 +108,7 @@ describe("backend-registry storage", () => {
     expect(result).toEqual([
       {
         id: "locked-cloud",
-        name: "OpenHands Cloud",
+        name: FREEHANDS_CLOUD_NAME,
         host: window.location.origin,
         apiKey: "",
         kind: "cloud",
@@ -129,7 +130,7 @@ describe("backend-registry storage", () => {
     expect(readStoredBackends()).toEqual([
       {
         id: "locked-cloud",
-        name: "OpenHands Cloud",
+        name: FREEHANDS_CLOUD_NAME,
         host: "https://pr-254.staging.openhands.dev",
         apiKey: "",
         kind: "cloud",

@@ -4,6 +4,10 @@ import { openhandsNeutral } from "./openhands-neutral";
 import { openhandsNeo } from "./openhands-neo";
 import { lightPlus } from "./light-plus";
 import { solarizedLight } from "./solarized-light";
+import { freehandsAurora } from "./freehands-aurora";
+import { freehandsSakura } from "./freehands-sakura";
+import { freehandsNeon } from "./freehands-neon";
+import { freehandsDawn } from "./freehands-dawn";
 
 /**
  * The theme registry.
@@ -17,6 +21,10 @@ export const COLOR_THEMES: Record<ColorThemeKey, ColorThemeDefinition> = {
   "openhands-neo": openhandsNeo,
   "light-plus": lightPlus,
   "solarized-light": solarizedLight,
+  "freehands-aurora": freehandsAurora,
+  "freehands-sakura": freehandsSakura,
+  "freehands-neon": freehandsNeon,
+  "freehands-dawn": freehandsDawn,
 };
 
 export const DEFAULT_COLOR_THEME: ColorThemeKey = "openhands-neutral";

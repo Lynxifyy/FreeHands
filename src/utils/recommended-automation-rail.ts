@@ -3,17 +3,22 @@ import {
   type RecommendedAutomation,
 } from "@openhands/extensions/automations";
 import { DISCORD_RECOMMENDED_AUTOMATION } from "#/constants/discord";
+import { FREEHANDS_AUTOMATIONS } from "#/constants/freehands-automations";
 import { getFeaturedAutomationIds } from "#/manifests/automation-interface";
 import { SETUP_REGISTRY } from "#/manifests/manifest-sources";
 import type { Automation } from "#/types/automation";
 
 /**
- * The automations the host recommends. The published catalog plus the host's
- * own entries (currently the Discord server automation), so a host feature is
- * recommended exactly like a catalog one.
+ * The automations the host recommends: the published catalog plus the host's
+ * own entries, so a FreeHands template is recommended exactly like a catalog
+ * one.
  */
 export function getHostAutomationCatalog(): RecommendedAutomation[] {
-  return [...AUTOMATION_CATALOG, DISCORD_RECOMMENDED_AUTOMATION];
+  return [
+    ...AUTOMATION_CATALOG,
+    DISCORD_RECOMMENDED_AUTOMATION,
+    ...FREEHANDS_AUTOMATIONS,
+  ];
 }
 
 export function getAutomationsByPopularity(

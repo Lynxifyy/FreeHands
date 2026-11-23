@@ -7,7 +7,13 @@ import { ContextMenuListItem } from "../../context-menu/context-menu-list-item";
 import { I18nKey } from "#/i18n/declaration";
 import { ConversationNameContextMenuIconText } from "../../conversation/conversation-name-context-menu-icon-text";
 
-import { Archive, ArchiveRestore, Gauge, Tags } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Gauge,
+  PictureInPicture,
+  Tags,
+} from "lucide-react";
 import EditIcon from "#/icons/u-edit.svg?react";
 import SkillsIcon from "#/icons/skills.svg?react";
 import ToolsIcon from "#/icons/u-tools.svg?react";
@@ -27,6 +33,7 @@ interface ConversationCardContextMenuProps {
   onDisplayCost?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onShowAgentTools?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onShowSkills?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onOpenMiniWindow?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onDownloadViaVSCode?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onDownloadConversation?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   position?: "top" | "bottom";
@@ -49,6 +56,7 @@ export function ConversationCardContextMenu({
   onDisplayCost,
   onShowAgentTools,
   onShowSkills,
+  onOpenMiniWindow,
   onDownloadViaVSCode,
   onDownloadConversation,
   position = "bottom",
@@ -162,6 +170,18 @@ export function ConversationCardContextMenu({
                   />
                 }
                 text={t(I18nKey.CONVERSATION$SHOW_SKILLS)}
+              />
+            </ContextMenuListItem>
+          ),
+          onOpenMiniWindow && (
+            <ContextMenuListItem
+              key="open-mini-window-button"
+              testId="open-mini-window-button"
+              onClick={onOpenMiniWindow}
+            >
+              <ConversationNameContextMenuIconText
+                icon={<PictureInPicture className="h-4 w-4" aria-hidden />}
+                text={t(I18nKey.MINI_WINDOW$TITLE)}
               />
             </ContextMenuListItem>
           ),

@@ -8,9 +8,9 @@ import {
 import { useTranslation } from "react-i18next";
 import type { RecommendedAutomation } from "@openhands/extensions/automations";
 import {
-  INTEGRATION_CATALOG as MCP_MARKETPLACE,
+  MCP_MARKETPLACE,
   type IntegrationCatalogEntry as MarketplaceEntry,
-} from "@openhands/extensions/integrations";
+} from "#/constants/mcp-marketplace";
 import { I18nKey } from "#/i18n/declaration";
 import { McpLogoBadge } from "#/components/features/mcp-logo-badge";
 import { getMarketplaceEntryById } from "#/utils/mcp-marketplace-utils";

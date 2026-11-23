@@ -18,6 +18,7 @@ interface ConversationCardActionsProps {
   onStop?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onEdit?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onEditTags?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onOpenMiniWindow?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onDownloadViaVSCode?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onDownloadConversation?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   executionStatus?: ExecutionStatus | null;
@@ -34,6 +35,7 @@ export function ConversationCardActions({
   onStop,
   onEdit,
   onEditTags,
+  onOpenMiniWindow,
   onDownloadViaVSCode,
   onDownloadConversation,
   executionStatus,
@@ -127,6 +129,7 @@ export function ConversationCardActions({
               onStop={isActive ? onStop : undefined}
               onEdit={onEdit}
               onEditTags={onEditTags}
+              onOpenMiniWindow={onOpenMiniWindow}
               onDownloadViaVSCode={
                 conversationId && showOptions ? onDownloadViaVSCode : undefined
               }

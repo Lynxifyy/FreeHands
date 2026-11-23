@@ -42,6 +42,8 @@ interface ConversationCardProps {
    * leaves this undefined there and the menu item disappears.
    */
   onEditTags?: () => void;
+  /** Opens this conversation in a floating, read-only mini window. */
+  onOpenMiniWindow?: () => void;
   showOptions?: boolean;
   title: string;
   selectedRepository: RepositorySelection | null;
@@ -78,6 +80,7 @@ export function ConversationCard({
   onStop,
   onChangeTitle,
   onEditTags,
+  onOpenMiniWindow,
   showOptions,
   title,
   selectedRepository,
@@ -260,9 +263,12 @@ export function ConversationCard({
       data-active={isActive ? "true" : "false"}
       onClick={onClick}
       className={cn(
-        "group relative h-auto w-full cursor-pointer rounded-md py-1 pl-2 pr-1 transition-colors",
-        !contextMenuOpen && "hover:bg-surface",
-        (isActive || contextMenuOpen) && "bg-surface",
+        "group relative h-auto w-full cursor-pointer rounded-3xl border border-transparent px-3 py-2.5",
+        "transition-all duration-200",
+        !contextMenuOpen &&
+          "hover:border-border/70 hover:bg-surface hover:ring-1 hover:ring-primary/25 hover:shadow-[0_10px_30px_-22px_rgba(59,130,246,0.9)]",
+        (isActive || contextMenuOpen) &&
+          "border-white/10 bg-[linear-gradient(135deg,rgba(59,130,246,0.16),rgba(168,85,247,0.14),rgba(236,72,153,0.1))] ring-2 ring-primary/30 shadow-[0_10px_28px_-18px_rgba(168,85,247,0.9)]",
       )}
     >
       <div className="flex items-center w-full min-w-0">
@@ -328,6 +334,7 @@ export function ConversationCard({
                       onStop={onStop && handleStop}
                       onEdit={onChangeTitle && handleEdit}
                       onEditTags={onEditTags && handleEditTags}
+                      onOpenMiniWindow={onOpenMiniWindow}
                       onDownloadViaVSCode={handleDownloadViaVSCode}
                       onDownloadConversation={handleDownloadConversation}
                       executionStatus={executionStatus}
@@ -356,6 +363,7 @@ export function ConversationCard({
                   onStop={onStop && handleStop}
                   onEdit={onChangeTitle && handleEdit}
                   onEditTags={onEditTags && handleEditTags}
+                  onOpenMiniWindow={onOpenMiniWindow}
                   onDownloadViaVSCode={handleDownloadViaVSCode}
                   onDownloadConversation={handleDownloadConversation}
                   executionStatus={executionStatus}

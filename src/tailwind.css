@@ -878,9 +878,71 @@ button.extension-module-card-interactive {
   opacity: 0.8;
 }
 
+/* Chat composer: an animated blue → purple → pink outline that brightens while
+   the input has focus. The gradient is a masked pseudo-element so it sits on
+   the border and never eats pointer events. */
+.composer-aurora {
+  position: relative;
+  border-radius: 18px;
+  transition: box-shadow 200ms ease;
+}
+
+.composer-aurora::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    120deg,
+    #3b82f6,
+    #a855f7,
+    #ec4899,
+    #6366f1,
+    #3b82f6
+  );
+  background-size: 300% 300%;
+  animation: sidebar-aurora 7s ease infinite;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+  transition: opacity 200ms ease;
+}
+
+.composer-aurora:focus-within::before {
+  opacity: 1;
+}
+
+.composer-aurora:focus-within {
+  box-shadow:
+    0 0 0 1px rgb(168 85 247 / 0.28),
+    0 12px 42px -14px rgb(59 130 246 / 0.6);
+}
+
+/* Task tracker bubbles: a soft halo pulse on the in-progress row. */
+@keyframes task-bubble-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(168 85 247 / 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgb(168 85 247 / 0);
+  }
+}
+
+.task-bubble-active {
+  animation: task-bubble-pulse 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .status-play-gradient,
-  .sidebar-glass::before {
+  .sidebar-glass::before,
+  .composer-aurora::before,
+  .task-bubble-active {
     animation: none;
     background-position: 0 0;
   }

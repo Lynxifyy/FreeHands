@@ -255,17 +255,23 @@ describe("recommended automations", () => {
       "github-agents-md-maintainer",
       "news-digest",
       "github-repo-monitor",
+      "freehands-repo-health",
       "slack-standup-digest",
+      "freehands-static-audit",
       "linear-triage-assistant",
+      "freehands-test-gap-finder",
       "linear-issue-to-github-pr",
       "gitlab-issue-to-mr",
       "linear-issue-to-gitlab-mr",
+      "freehands-dependency-guard",
       "linear-issue-to-bitbucket-pr",
+      "freehands-pr-shepherd",
       "jira-issue-to-pr",
       "qa-changes",
       "discord",
       "jira-issue-to-gitlab-mr",
       "research-brief-writer",
+      "freehands-release-notes",
       "jira-issue-to-bitbucket-pr",
       "github-delivery-watchdog",
       "github-issue-triage",
@@ -295,7 +301,7 @@ describe("recommended automations", () => {
     expect(betaHeading).toHaveTextContent(
       I18nKey.RECOMMENDED_AUTOMATIONS$BETA_LABEL,
     );
-    expect(within(betaHeading).getByText("18")).toBeInTheDocument();
+    expect(within(betaHeading).getByText("24")).toBeInTheDocument();
 
     const betaSection = screen.getByTestId(
       "recommended-automations-beta-section",

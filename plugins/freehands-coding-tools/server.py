@@ -13,6 +13,7 @@ confined to that root.
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -30,6 +31,67 @@ from typing import Any
 from fastmcp import FastMCP
 
 mcp = FastMCP("freehands-coding-tools")
+
+# A tool that raises aborts the model's turn and, in a long action chain, loses
+# the reason the call failed. Return a structured, actionable result instead so
+# the agent can correct the call and continue.
+def _structured_errors(fn):
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except FileNotFoundError as error:
+            return {
+                "ok": False,
+                "error": "not_found",
+                "detail": str(error),
+                "next": "Confirm the path with find_files or repo_map, then call the tool again.",
+            }
+        except PermissionError as error:
+            return {
+                "ok": False,
+                "error": "permission_denied",
+                "detail": str(error),
+                "next": "The path is outside the workspace or not readable; choose a path inside it.",
+            }
+        except subprocess.TimeoutExpired as error:
+            return {
+                "ok": False,
+                "error": "timeout",
+                "detail": str(error),
+                "next": "The command exceeded its timeout. Narrow the command or raise the timeout argument.",
+            }
+        except ValueError as error:
+            return {
+                "ok": False,
+                "error": "invalid_argument",
+                "detail": str(error),
+                "next": "Fix the argument described in detail and call the tool again.",
+            }
+        except Exception as error:  # noqa: BLE001 - every tool failure must reach the model
+            return {
+                "ok": False,
+                "error": type(error).__name__,
+                "detail": str(error),
+                "next": "Inspect the detail, adjust the call, and retry once; if it repeats, report it instead of looping.",
+            }
+
+    return wrapped
+
+
+_register_tool = mcp.tool
+
+
+def _safe_tool(*decorator_args, **decorator_kwargs):
+    def register(fn):
+        return _register_tool(*decorator_args, **decorator_kwargs)(
+            _structured_errors(fn)
+        )
+
+    return register
+
+
+mcp.tool = _safe_tool
 
 SKIP_DIRS = {
     ".git", "node_modules", "build", "dist", ".venv", "venv", "__pycache__",
@@ -994,6 +1056,266 @@ def mobilebox_delete(phone_id: str) -> Any:
         "DELETE", f"/phones/{urllib.parse.quote(phone_id)}"
     )
 
+
+
+# ── static analysis ─────────────────────────────────────────────────────────
+
+TEXT_SUFFIXES = {
+    ".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go", ".rs",
+    ".java", ".kt", ".kts", ".cs", ".cpp", ".cc", ".c", ".h", ".hpp",
+    ".php", ".rb", ".swift", ".lua", ".luau", ".sh", ".bash", ".vue",
+    ".svelte", ".html", ".css", ".scss",
+}
+
+AUDIT_RULES: tuple[tuple[str, re.Pattern[str], str, str], ...] = (
+    (
+        "debug-log",
+        re.compile(r"\bconsole\.(?:log|debug)\("),
+        "Debug logging left in shipped code.",
+        "Delete it, or send it through the project logger behind a debug flag.",
+    ),
+    (
+        "py-print",
+        re.compile(r"^\s*print\(", re.MULTILINE),
+        "Unstructured print instead of logging.",
+        "Use the module logger (logging.getLogger(__name__)) so the output is controllable.",
+    ),
+    (
+        "swallowed-error",
+        re.compile(r"catch\s*(?:\([^)]*\))?\s*\{\s*\}"),
+        "Empty catch block hides a failure.",
+        "Handle the error, rethrow it, or log it with context.",
+    ),
+    (
+        "py-bare-except",
+        re.compile(r"^\s*except\s*:\s*$", re.MULTILINE),
+        "Bare except catches KeyboardInterrupt and SystemExit too.",
+        "Catch the specific exception you can handle.",
+    ),
+    (
+        "todo",
+        re.compile(r"\b(?:TODO|FIXME|XXX|HACK)\b"),
+        "Unfinished work marker.",
+        "Resolve it or open a tracked issue; do not ship a silent TODO.",
+    ),
+    (
+        "ts-any",
+        re.compile(r":\s*any\b"),
+        "`any` disables the type checker at this boundary.",
+        "Use the real type, `unknown` plus a guard, or a generic.",
+    ),
+    (
+        "debugger",
+        re.compile(r"^\s*debugger\s*;?\s*$", re.MULTILINE),
+        "`debugger` statement left in the code.",
+        "Remove it; it halts execution for every user with devtools open.",
+    ),
+    (
+        "eval",
+        re.compile(r"\beval\s*\("),
+        "`eval` executes arbitrary input.",
+        "Parse the input explicitly (JSON.parse, ast.literal_eval, a schema).",
+    ),
+    (
+        "inner-html",
+        re.compile(r"\.innerHTML\s*="),
+        "Direct innerHTML write can inject markup.",
+        "Set textContent, or sanitize the HTML before inserting it.",
+    ),
+    (
+        "shell-true",
+        re.compile(r"subprocess\.\w+\([^)]*shell\s*=\s*True"),
+        "shell=True turns arguments into a shell command.",
+        "Pass an argument list and leave shell=False.",
+    ),
+    (
+        "os-system",
+        re.compile(r"\bos\.system\("),
+        "`os.system` runs through a shell and cannot be cancelled cleanly.",
+        "Use subprocess.run([...], check=True).",
+    ),
+)
+
+
+def _audit_file(path: Path) -> list[dict[str, Any]]:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    findings: list[dict[str, Any]] = []
+    for rule_id, pattern, why, better in AUDIT_RULES:
+        for match in pattern.finditer(text):
+            line = text.count("\n", 0, match.start()) + 1
+            snippet = text.splitlines()[line - 1].strip()[:160]
+            findings.append(
+                {
+                    "file": str(path.relative_to(_workspace())),
+                    "line": line,
+                    "rule": rule_id,
+                    "snippet": snippet,
+                    "why": why,
+                    "better": better,
+                }
+            )
+            if len(findings) >= 200:
+                return findings
+    return findings
+
+
+@mcp.tool()
+def static_audit(glob: str = "**/*", limit: int = 200) -> dict[str, Any]:
+    """Review source files for defects that cannot work or should not ship.
+
+    Reports the file, line, snippet, why it is wrong, and the better choice.
+    Use it before claiming a task is complete.
+    """
+    root = _workspace()
+    findings: list[dict[str, Any]] = []
+    scanned = 0
+    for path in _walk_files(root):
+        if path.suffix.lower() not in TEXT_SUFFIXES:
+            continue
+        if glob not in ("**/*", "*") and not path.match(glob):
+            continue
+        scanned += 1
+        findings.extend(_audit_file(path))
+        if len(findings) >= limit:
+            break
+    by_rule: dict[str, int] = {}
+    for finding in findings:
+        by_rule[finding["rule"]] = by_rule.get(finding["rule"], 0) + 1
+    return {
+        "scanned_files": scanned,
+        "finding_count": len(findings),
+        "by_rule": dict(sorted(by_rule.items(), key=lambda kv: -kv[1])),
+        "findings": findings[:limit],
+    }
+
+
+@mcp.tool()
+def symbol_usages(symbol: str, glob: str = "**/*", limit: int = 100) -> dict[str, Any]:
+    """Find every use of a symbol so a rename or signature change is safe."""
+    pattern = re.compile(rf"\b{re.escape(symbol)}\b")
+    root = _workspace()
+    hits: list[dict[str, Any]] = []
+    files: dict[str, int] = {}
+    for path in _walk_files(root):
+        if path.suffix.lower() not in TEXT_SUFFIXES:
+            continue
+        if glob not in ("**/*", "*") and not path.match(glob):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        matches = list(pattern.finditer(text))
+        if not matches:
+            continue
+        rel = str(path.relative_to(root))
+        files[rel] = len(matches)
+        for match in matches[:3]:
+            line = text.count("\n", 0, match.start()) + 1
+            hits.append(
+                {
+                    "file": rel,
+                    "line": line,
+                    "snippet": text.splitlines()[line - 1].strip()[:160],
+                }
+            )
+        if len(hits) >= limit:
+            break
+    return {
+        "symbol": symbol,
+        "file_count": len(files),
+        "total_uses": sum(files.values()),
+        "files": dict(sorted(files.items(), key=lambda kv: -kv[1])),
+        "hits": hits[:limit],
+    }
+
+
+GAME_ENGINE_MARKERS: tuple[tuple[str, str, str, str], ...] = (
+    ("project.godot", "Godot", "godot --headless --import && godot --headless --quit", "Open the project in Godot 4 and press F5 to run the main scene."),
+    ("ProjectSettings", "Unity", "unity -batchmode -quit -projectPath .", "Open the folder in Unity Hub and press Play."),
+    ("*.uproject", "Unreal Engine", "UnrealEditor-Cmd <project>.uproject -run=pythonscript", "Generate project files, build the target, then Play in the editor."),
+    ("fabric.mod.json", "Minecraft (Fabric)", "./gradlew build", "Run the `runClient` Gradle task."),
+    ("mods.toml", "Minecraft (Forge/NeoForge)", "./gradlew build", "Run the `runClient` Gradle task."),
+    ("Assets/Scenes", "Unity", "unity -batchmode -quit -projectPath .", "Open in Unity Hub and Play."),
+    ("bevy", "Rust (Bevy)", "cargo run", "cargo run --release for the game binary."),
+)
+
+
+@mcp.tool()
+def game_project_scan() -> dict[str, Any]:
+    """Detect a game project's engine and report how to build, run and test it."""
+    root = _workspace()
+    detected: list[dict[str, str]] = []
+    for marker, engine, build, run in GAME_ENGINE_MARKERS:
+        if marker.startswith("*"):
+            found = next(root.glob(marker), None)
+        else:
+            found = root / marker
+            if not found.exists() and marker == "Assets/Scenes":
+                found = root / "Assets"
+        if found and found.exists():
+            detected.append(
+                {"engine": engine, "marker": str(found.relative_to(root)), "build": build, "run": run}
+            )
+    package_json = root / "package.json"
+    if package_json.exists():
+        try:
+            data = _read_json(package_json) or {}
+        except Exception:
+            data = {}
+        deps = {**(data.get("dependencies") or {}), **(data.get("devDependencies") or {})}
+        for engine in ("phaser", "pixi.js", "three", "babylonjs", "@babylonjs/core", "excalibur"):
+            if engine in deps:
+                detected.append(
+                    {
+                        "engine": f"Web ({engine})",
+                        "marker": "package.json",
+                        "build": "npm run build",
+                        "run": "npm run dev",
+                    }
+                )
+    return {
+        "workspace": str(root),
+        "detected": detected,
+        "next": (
+            "Pick the matching engine entry, run its build command to prove the "
+            "toolchain works, then use the file tools to add the feature."
+            if detected
+            else "No known game engine marker found. Ask the user which engine and runtime they target."
+        ),
+    }
+
+
+@mcp.tool()
+def bundle_size_report(top: int = 10) -> dict[str, Any]:
+    """Measure build output so a change cannot silently bloat the bundle."""
+    root = _workspace()
+    candidates = [root / name for name in ("dist", "build", ".next", "out", "target/release", "bin", "obj")]
+    reports: list[dict[str, Any]] = []
+    for directory in candidates:
+        if not directory.is_dir():
+            continue
+        files = [p for p in directory.rglob("*") if p.is_file()]
+        total = sum(p.stat().st_size for p in files)
+        largest = sorted(files, key=lambda p: p.stat().st_size, reverse=True)[:top]
+        reports.append(
+            {
+                "directory": str(directory.relative_to(root)),
+                "files": len(files),
+                "total_bytes": total,
+                "largest": [
+                    {"path": str(p.relative_to(root)), "bytes": p.stat().st_size}
+                    for p in largest
+                ],
+            }
+        )
+    return {
+        "reports": reports,
+        "next": "Run the project build first if no directory is listed.",
+    }
 
 if __name__ == "__main__":
     mcp.run()

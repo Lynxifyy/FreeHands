@@ -1,4 +1,4 @@
-import { INTEGRATION_CATALOG as MCP_MARKETPLACE } from "@openhands/extensions/integrations";
+import { MCP_MARKETPLACE } from "#/constants/mcp-marketplace";
 import {
   findCatalogEntryForServer,
   getMcpMarketplaceCatalog,

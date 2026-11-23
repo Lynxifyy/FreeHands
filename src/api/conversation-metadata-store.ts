@@ -5,6 +5,13 @@ const STORAGE_KEY = "openhands-agent-server-conversation-metadata";
 
 export type WorkspaceMode = "local_repo" | "new_worktree";
 
+/** A repository cloned into a conversation alongside its primary repository. */
+export interface ExtraRepository {
+  full_name: string;
+  branch: string;
+  git_provider: Provider;
+}
+
 export interface ConversationMetadata {
   selected_repository: string | null;
   selected_branch: string | null;
@@ -18,6 +25,12 @@ export interface ConversationMetadata {
    * git baseline to compare against.
    */
   selected_workspace?: string | null;
+  /**
+   * Additional repositories the user cloned into this conversation. The
+   * agent-server models one primary repository per conversation, so extras
+   * live here and are cloned by the agent under `./repos/<name>`.
+   */
+  extra_repositories?: ExtraRepository[] | null;
   /**
    * How the conversation should use `selected_workspace`.
    *

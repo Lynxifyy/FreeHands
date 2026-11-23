@@ -19,9 +19,9 @@ import {
   installedServerMatchesQuery,
 } from "#/utils/mcp-marketplace-utils";
 import {
-  INTEGRATION_CATALOG as MCP_MARKETPLACE,
+  MCP_MARKETPLACE,
   type IntegrationCatalogEntry as MarketplaceEntry,
-} from "@openhands/extensions/integrations";
+} from "#/constants/mcp-marketplace";
 import { MCPServerConfig } from "#/types/mcp-server";
 import { flattenMcpConfig } from "#/utils/mcp-installed-servers";
 import {

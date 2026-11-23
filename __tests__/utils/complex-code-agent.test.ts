@@ -17,10 +17,22 @@ describe("complex code agent", () => {
     expect(COMPLEX_CODE_PROFILE_NAME.toLowerCase()).toContain("opencode");
   });
 
-  it("builds an ACP profile for OpenCode", () => {
-    expect(complexCodeAgentProfile()).toEqual({
+  it("builds an ACP profile that can launch without a global binary", () => {
+    const profile = complexCodeAgentProfile();
+
+    expect(profile).toMatchObject({
       agent_kind: "acp",
       acp_server: "opencode",
+      acp_command: "npx",
+      acp_args: expect.arrayContaining(["acp"]),
+    });
+    expect(profile).not.toHaveProperty("acp_model");
+  });
+
+  it("launches the global binary when the probe found it", () => {
+    expect(complexCodeAgentProfile("opencode")).toMatchObject({
+      acp_command: "opencode",
+      acp_args: ["acp"],
     });
   });
 

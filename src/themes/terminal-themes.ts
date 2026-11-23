@@ -65,6 +65,10 @@ const palettes: Record<ColorThemeKey, ITheme> = {
   "openhands-neo": dark,
   "light-plus": light,
   "solarized-light": solarized,
+  "freehands-aurora": dark,
+  "freehands-sakura": dark,
+  "freehands-neon": dark,
+  "freehands-dawn": light,
 };
 
 export function getTerminalTheme(

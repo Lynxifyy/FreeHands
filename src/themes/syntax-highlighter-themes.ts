@@ -12,6 +12,10 @@ const SYNTAX_THEMES: Record<ColorThemeKey, typeof vs> = {
   "openhands-neo": vscDarkPlus,
   "light-plus": vs,
   "solarized-light": solarizedlight,
+  "freehands-aurora": vscDarkPlus,
+  "freehands-sakura": vscDarkPlus,
+  "freehands-neon": vscDarkPlus,
+  "freehands-dawn": vs,
 };
 
 export function getSyntaxHighlighterTheme(theme: ColorThemeKey) {

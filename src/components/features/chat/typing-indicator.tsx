@@ -5,9 +5,11 @@ import {
   isACPToolCallEvent,
   isActionEvent,
   isAgentErrorEvent,
+  isMessageEvent,
   isObservationEvent,
   isUserRejectObservation,
 } from "#/types/agent-server/type-guards";
+import { parseMessageFromEvent } from "#/components/conversation-events/chat/event-content-helpers/parse-message-from-event";
 import {
   getACPToolCallTitleKey,
   stripRedundantTitlePrefix,
@@ -54,6 +56,45 @@ const LIVE_ACTION_KINDS = new Set([
   "BrowserCloseTabAction",
 ]);
 
+/**
+ * Command-shaped shell work is the bulk of a long session. Naming the phase
+ * ("Running tests", "Building the project") is more useful than echoing the
+ * whole command, which the second line still shows verbatim.
+ */
+const COMMAND_PHASES: ReadonlyArray<{ pattern: RegExp; key: string }> = [
+  {
+    pattern:
+      /\b(test|pytest|jest|vitest|mocha|phpunit|rspec|go test|cargo test|ctest)\b/i,
+    key: "ACTION_MESSAGE$RUN_TESTS",
+  },
+  {
+    pattern:
+      /\b(lint|eslint|prettier|ruff|clippy|checkstyle|flake8|tsc --noEmit)\b/i,
+    key: "ACTION_MESSAGE$RUN_LINT",
+  },
+  {
+    pattern:
+      /\b(build|compile|webpack|vite build|next build|cargo build|go build|make)\b/i,
+    key: "ACTION_MESSAGE$RUN_BUILD",
+  },
+  {
+    pattern:
+      /\b(npm (install|i|ci)|pnpm (install|i|add)|yarn( install| add)?|pip install|poetry install|uv (sync|pip install)|cargo fetch|bundle install|composer install|apt(-get)? install|brew install)\b/i,
+    key: "ACTION_MESSAGE$INSTALL_DEPS",
+  },
+  { pattern: /\bgit\b/i, key: "ACTION_MESSAGE$GIT_OP" },
+  {
+    pattern:
+      /\b(npm (run )?dev|vite|next dev|uvicorn|flask run|http\.server|serve|docker (run|compose up))\b/i,
+    key: "ACTION_MESSAGE$SERVE",
+  },
+];
+
+const describeCommandPhase = (command: string): EventTitleDescriptor | null => {
+  const phase = COMMAND_PHASES.find(({ pattern }) => pattern.test(command));
+  return phase ? { kind: "translation", key: phase.key, values: {} } : null;
+};
+
 const getLiveActionTitle = (event: OHEvent): EventTitleDescriptor | null => {
   if (!isActionEvent(event)) return null;
 
@@ -62,9 +103,60 @@ const getLiveActionTitle = (event: OHEvent): EventTitleDescriptor | null => {
     return { kind: "text", text: summary };
   }
 
+  if (
+    event.action.kind === "ExecuteBashAction" ||
+    event.action.kind === "TerminalAction"
+  ) {
+    const phase = describeCommandPhase(event.action.command);
+    if (phase) return phase;
+  }
+
   return LIVE_ACTION_KINDS.has(event.action.kind)
     ? getActionEventTitleDescriptor(event)
     : null;
+};
+
+const THINKING_SUBJECT_MAX = 72;
+
+const shortenSubject = (text: string): string => {
+  const line = text.replace(/\s+/g, " ").trim();
+  return line.length > THINKING_SUBJECT_MAX
+    ? `${line.slice(0, THINKING_SUBJECT_MAX)}…`
+    : line;
+};
+
+/**
+ * The newest thought the agent is actually working from, so a bare "Thinking"
+ * becomes "Thinking about: <subject>". Falls back to the latest assistant
+ * message when the model did not emit a `ThinkAction`.
+ */
+export const deriveThinkingSubject = (
+  events: readonly OHEvent[],
+): string | null => {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event.isFromPlanningAgent) continue;
+
+    if (isActionEvent(event)) {
+      if (
+        event.action.kind === "ThinkAction" &&
+        typeof event.action.thought === "string"
+      ) {
+        const thought = shortenSubject(event.action.thought);
+        if (thought) return thought;
+      }
+      // Any other action is newer than older prose; do not resurface a stale
+      // assistant paragraph as the current thought.
+      return null;
+    }
+
+    if (isMessageEvent(event) && event.llm_message.role === "assistant") {
+      const text = shortenSubject(parseMessageFromEvent(event));
+      if (text) return text;
+    }
+  }
+
+  return null;
 };
 
 export const deriveLiveActivity = (
@@ -196,6 +288,10 @@ export function TypingIndicator({ events, model }: TypingIndicatorProps) {
   const runningCommand = deriveRunningCommand(events);
   const oliStatus = deriveOliStatus(events);
   const modelLabel = thinkingModelLabel(model);
+  const thinkingSubject =
+    activity.kind === "translation" && activity.key === THINKING_KEY
+      ? deriveThinkingSubject(events)
+      : null;
 
   // While Oli is helping, the delegation itself is the live activity, so its
   // generic task title is replaced by the combined status.
@@ -210,6 +306,8 @@ export function TypingIndicator({ events, model }: TypingIndicatorProps) {
     modelLabel
   ) {
     text = t(I18nKey.ACTION_MESSAGE$MODEL_THINKING, { model: modelLabel });
+  } else if (thinkingSubject) {
+    text = t(I18nKey.THINKING$ABOUT, { subject: thinkingSubject });
   }
 
   return (

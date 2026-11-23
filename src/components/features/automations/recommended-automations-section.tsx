@@ -4,9 +4,9 @@ import type { TFunction } from "i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { type RecommendedAutomation } from "@openhands/extensions/automations";
 import {
-  INTEGRATION_CATALOG as MCP_MARKETPLACE,
+  MCP_MARKETPLACE,
   type IntegrationCatalogEntry as MarketplaceEntry,
-} from "@openhands/extensions/integrations";
+} from "#/constants/mcp-marketplace";
 import { McpLogoStackBadge } from "#/components/features/mcp-page/mcp-logo-stack-badge";
 import { McpLogoBadge } from "#/components/features/mcp-logo-badge";
 import {

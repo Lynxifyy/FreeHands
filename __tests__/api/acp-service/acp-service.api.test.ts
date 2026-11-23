@@ -203,12 +203,13 @@ describe("AcpService.discoverModels", () => {
 describe("AcpService.getOpenCodeReadiness", () => {
   it("reports an installed, authenticated OpenCode", async () => {
     executeCommand
-      .mockResolvedValueOnce(bashOutput({ stdout: "installed\n" }))
+      .mockResolvedValueOnce(bashOutput({ stdout: "opencode\n" }))
       .mockResolvedValueOnce(bashOutput({ stdout: "present\n" }));
 
     await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
       installed: true,
       authenticated: "authenticated",
+      runner: "opencode",
     });
   });
 
@@ -220,17 +221,31 @@ describe("AcpService.getOpenCodeReadiness", () => {
     await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
       installed: false,
       authenticated: "unauthenticated",
+      runner: null,
     });
   });
 
   it("reports an installed but unauthenticated OpenCode", async () => {
     executeCommand
-      .mockResolvedValueOnce(bashOutput({ stdout: "installed\n" }))
+      .mockResolvedValueOnce(bashOutput({ stdout: "opencode\n" }))
       .mockResolvedValueOnce(bashOutput({ stdout: "absent\n" }));
 
     await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
       installed: true,
       authenticated: "unauthenticated",
+      runner: "opencode",
+    });
+  });
+
+  it("reports the npx runner when only npx can reach OpenCode", async () => {
+    executeCommand
+      .mockResolvedValueOnce(bashOutput({ stdout: "npx\n" }))
+      .mockResolvedValueOnce(bashOutput({ stdout: "absent\n" }));
+
+    await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
+      installed: true,
+      authenticated: "unauthenticated",
+      runner: "npx",
     });
   });
 });

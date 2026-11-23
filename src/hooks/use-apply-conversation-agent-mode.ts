@@ -70,7 +70,9 @@ export function useApplyConversationAgentMode() {
         if (mode === "complex") {
           // OpenCode lives on the agent server. Check it before switching so a
           // missing binary or missing credentials becomes an actionable
-          // message instead of an opaque launch failure.
+          // message instead of an opaque launch failure. When the binary is
+          // absent but Node is present, `npx` runs the same CLI.
+          let runner: "opencode" | "npx" | null = null;
           if (isLocal) {
             const readiness = await AcpService.getOpenCodeReadiness();
             if (readiness.installed === false) {
@@ -81,11 +83,26 @@ export function useApplyConversationAgentMode() {
               displayErrorToast(t(I18nKey.COMPLEX_CODE$OPENCODE_AUTH));
               return { ok: false };
             }
+            runner = readiness.runner;
           }
           await saveProfile.mutateAsync({
             name: COMPLEX_CODE_PROFILE_NAME,
-            profile: complexCodeAgentProfile(),
+            profile: complexCodeAgentProfile(runner),
           });
+          if (isLocal) {
+            const diagnostics = await AgentProfilesService.materializeProfile(
+              COMPLEX_CODE_PROFILE_NAME,
+            ).catch(() => null);
+            if (diagnostics?.valid === false) {
+              displayErrorToast(
+                t(I18nKey.COMPLEX_CODE$SWITCH_FAILED, {
+                  message:
+                    diagnostics.errors.join("; ") || t(I18nKey.ERROR$GENERIC),
+                }),
+              );
+              return { ok: false };
+            }
+          }
           const id = await activateProfileByName(COMPLEX_CODE_PROFILE_NAME);
           return { ok: !!id, agentProfileId: id ?? undefined };
         }

@@ -49,6 +49,11 @@ const CommandMenu = React.lazy(() =>
 const SuperAdminSetupGuide = React.lazy(
   () => import("#/components/features/setup-guide/super-admin-setup-guide"),
 );
+const MiniWindowHost = React.lazy(() =>
+  import("#/components/features/mini-window/mini-window").then((m) => ({
+    default: m.MiniWindowHost,
+  })),
+);
 
 /**
  * The macOS desktop app hides its title bar ("hiddenInset"), leaving the
@@ -209,6 +214,7 @@ function MainAppContent() {
           <React.Suspense fallback={null}>
             <EnvironmentSwitchOverlay />
             <CommandMenu />
+            <MiniWindowHost />
           </React.Suspense>
           <React.Suspense fallback={null}>
             <SuperAdminSetupGuide />

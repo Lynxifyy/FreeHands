@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mobilebox": {
+      "type": "http",
+      "url": "https://mobilebox.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MOBILESANDBOX_API_KEY}"
+      }
+    }
+  }
+}

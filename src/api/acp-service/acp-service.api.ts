@@ -132,25 +132,26 @@ class AcpService {
   static async getOpenCodeReadiness(): Promise<{
     installed: boolean | null;
     authenticated: AcpAuthStatus;
+    /** How to launch it: the global binary, or `npx` when only Node exists. */
+    runner: "opencode" | "npx" | null;
   }> {
     try {
       const out = await new BashClient(
         getAgentServerClientOptions(),
       ).executeCommand(
-        "if command -v opencode >/dev/null 2>&1; then echo installed; else echo missing; fi",
+        "if command -v opencode >/dev/null 2>&1; then echo opencode; " +
+          "elif command -v npx >/dev/null 2>&1; then echo npx; else echo missing; fi",
         undefined,
         PROBE_TIMEOUT_SECONDS,
       );
-      const installed =
-        (out.stdout ?? "").trim() === "installed"
-          ? true
-          : (out.stdout ?? "").trim() === "missing"
-            ? false
-            : null;
+      const token = (out.stdout ?? "").trim();
+      const runner =
+        token === "opencode" ? "opencode" : token === "npx" ? "npx" : null;
+      const installed = token === "missing" ? false : runner ? true : null;
       const authenticated = await this.getAuthStatus("opencode");
-      return { installed, authenticated };
+      return { installed, authenticated, runner };
     } catch {
-      return { installed: null, authenticated: "unknown" };
+      return { installed: null, authenticated: "unknown", runner: null };
     }
   }
 

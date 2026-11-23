@@ -16,7 +16,7 @@ describe("freehands-coding-tools plugin", () => {
       "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
     );
     expect(manifest.name).toBe("freehands-coding-tools");
-    expect(manifest.version).toBe("1.0.0");
+    expect(manifest.version).toBe("1.1.0");
   });
 
   it("starts the server over stdio from the plugin root", () => {

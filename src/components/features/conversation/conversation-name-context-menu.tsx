@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { ExternalLink, Gauge, Share2 } from "lucide-react";
+import { ExternalLink, Gauge, PictureInPicture, Share2 } from "lucide-react";
+import { useMiniWindowStore } from "#/stores/mini-window-store";
 import { useTranslation } from "react-i18next";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import { useActiveConversation } from "#/hooks/query/use-active-conversation";
@@ -112,6 +113,7 @@ export function ConversationNameContextMenu({
   const { backend } = useActiveBackend();
   const { data: conversation } = useActiveConversation();
   const isArchivedConversation = useIsArchivedConversation();
+  const openMiniWindow = useMiniWindowStore((state) => state.open);
   const ref = useClickOutsideElement<HTMLUListElement>(onClose, anchorRef);
 
   const anchorElement = anchorRef?.current ?? null;
@@ -198,6 +200,25 @@ export function ConversationNameContextMenu({
           />
         </ContextMenuListItem>
       )}
+
+      {conversation ? (
+        <ContextMenuListItem
+          testId="open-mini-window-button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openMiniWindow({
+              conversationId: conversation.id,
+              title: conversation.title ?? "",
+            });
+            onClose();
+          }}
+        >
+          <ConversationNameContextMenuIconText
+            icon={<PictureInPicture className="h-4 w-4" aria-hidden />}
+            text={t(I18nKey.MINI_WINDOW$TITLE)}
+          />
+        </ContextMenuListItem>
+      ) : null}
 
       {hasTools && <Divider testId="separator-tools" inset="menu" />}
 

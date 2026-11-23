@@ -4,6 +4,7 @@ import {
   getCookieAuthCloudHost,
   getLockedCloudHost,
 } from "../agent-server-config";
+import { FREEHANDS_CLOUD_NAME } from "#/constants/freehands-cloud";
 import type { Backend } from "./types";
 
 /**
@@ -17,7 +18,7 @@ export const SEEDED_DEFAULT_BACKEND_ID = "default-local";
 
 export const DEFAULT_LOCAL_BACKEND_NAME = "Local";
 export const LOCKED_CLOUD_BACKEND_ID = "locked-cloud";
-export const LOCKED_CLOUD_BACKEND_NAME = "OpenHands Cloud";
+export const LOCKED_CLOUD_BACKEND_NAME = FREEHANDS_CLOUD_NAME;
 
 export function makeLockedCloudBackend(): Backend | null {
   if (!getLockedCloudHost()) return null;

@@ -107,6 +107,17 @@ ENV AGENT_CANVAS_BUILD_GIT_REF=${OPENHANDS_BUILD_GIT_REF}
 ENV AGENT_CANVAS_BASE_PATH=${VITE_BASE_PATH}
 ENV VITE_POSTHOG_API_KEY=${VITE_POSTHOG_API_KEY}
 
+# Runtime tuning for three concurrent chats per user: unbuffered logs (so a
+# crashed tool call is visible immediately), no .pyc churn on the read-mostly
+# image, a bounded glibc arena count so several agent processes share memory
+# instead of fragmenting it, and a thread pool large enough for parallel bash
+# and file work.
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    MALLOC_ARENA_MAX=2 \
+    UV_THREADPOOL_SIZE=64 \
+    FREEHANDS_MAX_ACTIVE_CHATS=3
+
 USER root
 
 # Refresh inherited packages so the final image includes available security

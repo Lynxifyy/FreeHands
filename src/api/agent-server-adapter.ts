@@ -622,6 +622,15 @@ export const RESERVED_CONVERSATION_TAG_KEYS: ReadonlySet<string> = new Set([
   "archiveworkspacepath",
   "workspace",
   "working_dir",
+  // Implementation detail: a conversation can be launched from an agent
+  // profile, but its id/revision are not user-facing metadata and must not
+  // leak into the tag-chip row on conversation cards.
+  "agent_profile_id",
+  "agent_profile_version",
+  "agentprofileid",
+  "agentprofileversion",
+  "profile_id",
+  "profile_version",
   LOCAL_PLANNER_PARENT_TAG_KEY,
 ]);
 

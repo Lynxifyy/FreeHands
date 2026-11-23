@@ -288,7 +288,7 @@ describe("MetaLlmSettingsView", () => {
 
   it("creates missing router LLM profiles linked to the selected provider connection", async () => {
     const user = userEvent.setup();
-    saveMutateAsync.mockResolvedValue({ name: "openhands-router-pro" });
+    saveMutateAsync.mockResolvedValue({ name: "freehands-router-pro" });
     renderWithProviders(<MetaLlmSettingsView />);
 
     await openRouterProTemplate(user);
@@ -321,7 +321,7 @@ describe("MetaLlmSettingsView", () => {
 
   it("creates the classifier model when no LLM profiles exist yet", async () => {
     const user = userEvent.setup();
-    saveMutateAsync.mockResolvedValue({ name: "openhands-router-pro" });
+    saveMutateAsync.mockResolvedValue({ name: "freehands-router-pro" });
     // No saved LLM profiles and no active meta-profile (fresh install).
     vi.mocked(useLlmProfilesHook.useLlmProfiles).mockReturnValue({
       data: { profiles: [], active_profile: null },

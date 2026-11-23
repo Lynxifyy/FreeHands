@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "freehands-coding-tools",
-  "version": "1.0.0",
-  "description": "46 real coding tools for Oli: git, tests/lint/build, dependency and secret audits, code intelligence, file edits, HTTP/port probes, and Mobilebox live phones.",
+  "version": "1.1.0",
+  "description": "50 real coding tools for Oli: git, tests/lint/build, dependency and secret audits, static correctness review, code intelligence, file edits, HTTP/port probes, bundle sizes, game-engine detection, and Mobilebox live phones.",
   "author": {
     "name": "FreeHands"
   },
@@ -15,6 +15,8 @@
     "security",
     "mobile",
     "mobilebox",
-    "coding"
+    "coding",
+    "static-analysis",
+    "games"
   ]
 }

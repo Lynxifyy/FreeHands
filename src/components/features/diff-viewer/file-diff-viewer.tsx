@@ -67,6 +67,10 @@ const MONACO_THEME_NAMES: Record<ColorThemeKey, string> = {
   "openhands-neo": "openhands-diff-dark",
   "light-plus": "openhands-diff-light-plus",
   "solarized-light": "openhands-diff-solarized-light",
+  "freehands-aurora": "openhands-diff-dark",
+  "freehands-sakura": "openhands-diff-dark",
+  "freehands-neon": "openhands-diff-dark",
+  "freehands-dawn": "openhands-diff-light-plus",
 };
 
 const beforeMount = (monaco: Monaco) => {

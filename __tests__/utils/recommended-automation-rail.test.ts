@@ -70,15 +70,21 @@ describe("recommended automation rail", () => {
       "news-digest",
     ]);
     expect(conversationIds).toEqual([
+      "freehands-repo-health",
       "slack-standup-digest",
+      "freehands-static-audit",
       "linear-triage-assistant",
+      "freehands-test-gap-finder",
       "linear-issue-to-github-pr",
       "linear-issue-to-gitlab-mr",
+      "freehands-dependency-guard",
       "linear-issue-to-bitbucket-pr",
+      "freehands-pr-shepherd",
       "jira-issue-to-pr",
       "discord",
       "jira-issue-to-gitlab-mr",
       "research-brief-writer",
+      "freehands-release-notes",
       "jira-issue-to-bitbucket-pr",
     ]);
     expect(conversationIds).not.toContain("upstream-fork-sync");
@@ -114,6 +120,12 @@ describe("recommended automation rail", () => {
       { name: "Jira issue to GitLab MR" },
       { name: "Jira issue to Bitbucket PR" },
       { name: "Discord server" },
+      { name: "Repository health sweep" },
+      { name: "Static correctness audit" },
+      { name: "Test gap finder" },
+      { name: "Dependency and CVE guard" },
+      { name: "PR shepherd" },
+      { name: "Release notes writer" },
     ]);
 
     expect(flattenRecommendedRailGroups(groups)).toEqual([]);
