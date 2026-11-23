@@ -10,11 +10,11 @@ import {
   Monitor,
 } from "lucide-react";
 import { ServerClient } from "@openhands/typescript-client/clients";
-import OpenHandsLogoWhite from "#/assets/branding/openhands-logo-white.svg?react";
 import DigitalOceanLogo from "#/assets/branding/digitalocean-logo.svg?react";
 import { getMarsBridge } from "#/api/mars/mars-tunnel-backend";
 import { DigitalOceanConnectPanel } from "./managed-agents/digitalocean-connect-panel";
 import { BackNavButton } from "#/components/shared/buttons/back-nav-button";
+import { OliRobotHead } from "#/components/features/chat/oli-robot-head";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import {
   MODAL_MAX_WIDTH_VIEWPORT,
@@ -1002,12 +1002,7 @@ function CloudLoginColumn({
     <div className="flex w-full min-w-0 flex-col items-center gap-3">
       {showBranding ? (
         <div className="flex flex-col items-center gap-1">
-          <OpenHandsLogoWhite
-            width={56}
-            height={56}
-            className="text-contrast [&_path:not([fill=transparent])]:fill-current"
-            aria-hidden
-          />
+          <OliRobotHead status="thinking" size={56} animate={false} />
 
           <h4
             className={modalTitleLgMediumClassName}
@@ -1487,12 +1482,12 @@ function AddBackendChooser({
           title={t(I18nKey.BACKEND$CLOUD_TITLE)}
           description={t(I18nKey.BACKEND$CLOUD_OPTION_DESCRIPTION)}
           icon={
-            <OpenHandsLogoWhite
-              width={32}
-              height={32}
+            <span
               data-testid="add-backend-option-cloud-logo"
-              className="text-contrast [&_path:not([fill=transparent])]:fill-current"
-            />
+              className="inline-flex"
+            >
+              <OliRobotHead status="thinking" size={32} animate={false} />
+            </span>
           }
           onSelect={setSelectedOption}
           panelId={panelId}
