@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const translations: Record<string, string> = {
-  TELEMETRY$CONSENT_TITLE: "Help improve OpenHands",
+  TELEMETRY$CONSENT_TITLE: "Help improve FreeHands",
   TELEMETRY$CONSENT_DESCRIPTION:
     "We collect anonymous usage data to improve the product.",
   TELEMETRY$SEND_ANONYMOUS_DATA: "Send anonymous usage data",
@@ -208,7 +208,7 @@ describe("telemetry consent banner", () => {
     advanceBy(1);
 
     expect(screen.getByTestId("telemetry-consent-form")).toBeInTheDocument();
-    expect(screen.getByText("Help improve OpenHands")).toBeInTheDocument();
+    expect(screen.getByText("Help improve FreeHands")).toBeInTheDocument();
     expect(
       screen.getByText(
         "We collect anonymous usage data to improve the product.",

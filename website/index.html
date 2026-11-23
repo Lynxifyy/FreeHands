@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FreeHands — the agent that finishes the job</title>
+    <meta
+      name="description"
+      content="FreeHands is a coding agent with its own face, its own router and its own automations. Open a repo, describe the work, and get working code back."
+    />
+    <meta name="theme-color" content="#070B14" />
+    <link rel="icon" href="./assets/oli.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="./" aria-label="FreeHands home">
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="oli-face" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#7DD3FC" />
+                <stop offset="1" stop-color="#6366F1" />
+              </linearGradient>
+            </defs>
+            <line x1="32" y1="6" x2="32" y2="14" stroke="#A5B4FC" stroke-width="4" stroke-linecap="round" />
+            <circle cx="32" cy="5" r="4" fill="#F472B6" />
+            <rect x="10" y="14" width="44" height="40" rx="14" fill="url(#oli-face)" />
+            <circle cx="24" cy="33" r="4.5" fill="#0B1020" />
+            <circle cx="40" cy="33" r="4.5" fill="#0B1020" />
+            <rect x="24" y="44" width="16" height="4" rx="2" fill="#0B1020" opacity=".55" />
+          </svg>
+          <span class="brand-name">FreeHands</span>
+        </a>
+
+        <nav class="site-nav" aria-label="Primary">
+          <a href="#features">Features</a>
+          <a href="#modes">Modes</a>
+          <a href="#automations">Automations</a>
+          <a href="#install">Install</a>
+        </nav>
+
+        <a class="button button-ghost header-cta" href="https://github.com/Lynxifyy/FreeHands">GitHub</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="hero-glow hero-glow-a" aria-hidden="true"></div>
+        <div class="hero-glow hero-glow-b" aria-hidden="true"></div>
+
+        <div class="shell hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow">Agent Canvas, rebuilt as FreeHands</p>
+            <h1>The agent that <span class="gradient-text">finishes the job</span>.</h1>
+            <p class="lede">
+              FreeHands is a coding agent with its own face, its own router and its own
+              automations. Open a repository, describe what you want, and get working code back —
+              with the checks already run.
+            </p>
+
+            <div class="hero-actions">
+              <a class="button button-primary" href="#install">Run it locally</a>
+              <a class="button button-ghost" href="#features">See what's inside</a>
+            </div>
+
+            <dl class="hero-stats">
+              <div>
+                <dt>3</dt>
+                <dd>active chats per user</dd>
+              </div>
+              <div>
+                <dt>6</dt>
+                <dd>new built-in automations</dd>
+              </div>
+              <div>
+                <dt>0</dt>
+                <dd>config needed for the free router</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="hero-preview" aria-hidden="true">
+            <div class="window">
+              <div class="window-bar">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-amber"></span>
+                <span class="dot dot-green"></span>
+                <span class="window-title">freehands · conversations</span>
+              </div>
+
+              <div class="window-body">
+                <aside class="preview-sidebar">
+                  <div class="preview-brand">
+                    <svg viewBox="0 0 64 64" class="preview-mark">
+                      <rect x="10" y="14" width="44" height="40" rx="14" fill="#6366F1" />
+                      <circle cx="24" cy="33" r="4.5" fill="#0B1020" />
+                      <circle cx="40" cy="33" r="4.5" fill="#0B1020" />
+                    </svg>
+                    <span>FreeHands</span>
+                  </div>
+                  <div class="preview-card is-active">
+                    <span class="preview-card-title">Ship the inventory bug</span>
+                    <span class="preview-card-meta">editing code</span>
+                  </div>
+                  <div class="preview-card">
+                    <span class="preview-card-title">Minecraft client launcher</span>
+                    <span class="preview-card-meta">running tests</span>
+                  </div>
+                  <div class="preview-card">
+                    <span class="preview-card-title">Luau shop system</span>
+                    <span class="preview-card-meta">thinking</span>
+                  </div>
+                </aside>
+
+                <div class="preview-chat">
+                  <div class="preview-status">
+                    <span class="pulse"></span>
+                    Oli is reading <code>src/inventory/stack.ts</code>
+                  </div>
+
+                  <div class="bubble bubble-user">
+                    The stack size resets when I split a slot. Fix it and add a test.
+                  </div>
+
+                  <div class="bubble bubble-agent">
+                    <p>
+                      Found it: <code>splitStack</code> mutates the source before copying the
+                      count. I'll clone first, then write a regression test.
+                    </p>
+                    <div class="tool-row">
+                      <span class="tool-chip">file_editor</span>
+                      <span class="tool-chip">run_tests</span>
+                      <span class="tool-chip">code_critique</span>
+                    </div>
+                  </div>
+
+                  <div class="task-bubble">
+                    <span class="task done">read callers</span>
+                    <span class="task active">patch splitStack</span>
+                    <span class="task">add regression test</span>
+                  </div>
+
+                  <div class="composer">
+                    <span>Ask Oli to change something…</span>
+                    <span class="send">↵</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="section">
+        <div class="shell">
+          <p class="eyebrow">What's inside</p>
+          <h2>Built to keep going after the first draft</h2>
+          <p class="section-lede">
+            Most agents stop when the code compiles. FreeHands keeps reading, running and fixing
+            until the repository is actually in the state you asked for.
+          </p>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="feature-icon">◎</span>
+              <h3>Oli, not a rebrand</h3>
+              <p>
+                Oli knows its own name, its own limits and its own standards. Ask who it is and it
+                answers honestly. Ask for a Luau script and it writes one.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-icon">⌘</span>
+              <h3>Free model router</h3>
+              <p>
+                Router Pro and Router Flash pick a model per task. They work out of the box, and
+                you can point them at your own provider whenever you want.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-icon">⚡</span>
+              <h3>Mini windows</h3>
+              <p>
+                Keep a second conversation open in a small, draggable, read-only window while you
+                work in the main one. It remembers where you left it.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-icon">✓</span>
+              <h3>Static tester</h3>
+              <p>
+                Before Oli hands work back, it critiques every file it touched and fixes what
+                won't compile, won't connect or isn't finished.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-icon">⌁</span>
+              <h3>Real statuses</h3>
+              <p>
+                Thinking, reading, editing, running, searching, waiting. The status comes from real
+                events, so it never says "working" while nothing is happening.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-icon">⧉</span>
+              <h3>Multiple repositories</h3>
+              <p>
+                Attach more than one repository to a conversation. The selection persists and
+                reaches the agent instead of disappearing on reload.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="modes" class="section section-alt">
+        <div class="shell split">
+          <div>
+            <p class="eyebrow">Modes</p>
+            <h2>Three ways to work, one agent</h2>
+            <p class="section-lede">
+              Code mode is the default. Plan mode writes the plan before touching a file. Complex
+              Code mode runs on OpenCode for large, multi-file changes.
+            </p>
+          </div>
+
+          <div class="mode-list">
+            <article class="mode-card">
+              <h3>Code</h3>
+              <p>Implement, run and verify directly. The default for everyday work.</p>
+            </article>
+            <article class="mode-card">
+              <h3>Plan</h3>
+              <p>Produce an ordered plan and stop before editing anything.</p>
+            </article>
+            <article class="mode-card is-highlight">
+              <h3>Complex Code</h3>
+              <p>
+                Built for changes that cross many files. Reads the whole path, follows imports and
+                callers, and keeps going until the project's own checks pass.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="automations" class="section">
+        <div class="shell">
+          <p class="eyebrow">Automations</p>
+          <h2>Work that runs without you</h2>
+          <p class="section-lede">
+            Six new automations ship in this release, alongside the existing catalog. Each one
+            runs in your repository and reports what it changed.
+          </p>
+
+          <div class="automation-grid">
+            <article class="automation-card">
+              <h3>Repository health sweep</h3>
+              <p>Install, lint, type-check, test and build — then fix what is provably safe.</p>
+            </article>
+            <article class="automation-card">
+              <h3>Static correctness audit</h3>
+              <p>Dead imports, unreachable branches, mismatched types and broken build paths.</p>
+            </article>
+            <article class="automation-card">
+              <h3>Test gap finder</h3>
+              <p>Finds behaviour no test exercises and writes the highest-value missing tests.</p>
+            </article>
+            <article class="automation-card">
+              <h3>Dependency and CVE guard</h3>
+              <p>Upgrades safe dependencies and lists anything with a breaking change.</p>
+            </article>
+            <article class="automation-card">
+              <h3>PR shepherd</h3>
+              <p>Reproduces failing checks, pushes the smallest fix and reruns until green.</p>
+            </article>
+            <article class="automation-card">
+              <h3>Release notes writer</h3>
+              <p>Turns commits into grouped notes with breaking changes first.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-alt">
+        <div class="shell">
+          <p class="eyebrow">Themes</p>
+          <h2>Make it look like yours</h2>
+          <p class="section-lede">
+            Three new full themes, each with its own palette, syntax colours and terminal theme.
+          </p>
+
+          <div class="theme-row">
+            <article class="theme-card theme-dawn">
+              <span class="swatch"></span>
+              <h3>Dawn</h3>
+              <p>Warm light for daytime work.</p>
+            </article>
+            <article class="theme-card theme-neon">
+              <span class="swatch"></span>
+              <h3>Neon</h3>
+              <p>Green-cyan terminal feel.</p>
+            </article>
+            <article class="theme-card theme-sakura">
+              <span class="swatch"></span>
+              <h3>Sakura</h3>
+              <p>Soft pink for late sessions.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="install" class="section install">
+        <div class="shell install-inner">
+          <div>
+            <p class="eyebrow">Install</p>
+            <h2>One container, three services</h2>
+            <p class="section-lede">
+              The image bundles the agent server, the automation service and the frontend behind a
+              single port. Your conversations and settings live in <code>~/.openhands</code>.
+            </p>
+          </div>
+
+          <div class="install-block">
+            <div class="code-head">
+              <span>shell</span>
+              <button class="copy-button" type="button" data-copy-target="install-command">
+                Copy
+              </button>
+            </div>
+            <pre id="install-command"><code>docker run -d --name freehands \
+  -p 8000:8000 \
+  -e AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true \
+  -e FREEHANDS_MAX_ACTIVE_CHATS=3 \
+  -v "$HOME/.openhands:/home/openhands/.openhands" \
+  -v "$HOME/projects:/projects" \
+  ghcr.io/lynxifyy/freehands-agent-canvas:1.33.0</code></pre>
+            <p class="install-note">
+              Then open <code>http://localhost:8000/canvas/</code>. Set
+              <code>AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true</code> only when the port is reachable
+              by you alone.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <div class="footer-brand">
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="10" y="14" width="44" height="40" rx="14" fill="#6366F1" />
+            <circle cx="24" cy="33" r="4.5" fill="#0B1020" />
+            <circle cx="40" cy="33" r="4.5" fill="#0B1020" />
+          </svg>
+          <span>FreeHands</span>
+        </div>
+        <p class="footer-note">An Agent Canvas fork, rebuilt around Oli.</p>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="https://github.com/Lynxifyy/FreeHands">Source</a>
+          <a href="https://github.com/Lynxifyy/FreeHands/releases">Releases</a>
+          <a href="https://mobilebox.dev/setup.md">Mobilebox</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script>
+      document.querySelectorAll(".copy-button").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const target = document.getElementById(button.dataset.copyTarget);
+          if (!target) return;
+          try {
+            await navigator.clipboard.writeText(target.innerText);
+            button.textContent = "Copied";
+            setTimeout(() => {
+              button.textContent = "Copy";
+            }, 1600);
+          } catch {
+            button.textContent = "Select and copy";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
