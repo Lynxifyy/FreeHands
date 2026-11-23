@@ -29,7 +29,6 @@ function useActiveBackendDisplayName(): string {
 
 export function BackendSyncedSettingsBadge() {
   const { t } = useTranslation();
-  const active = useActiveBackend();
   const name = useActiveBackendDisplayName();
 
   return (
@@ -38,11 +37,7 @@ export function BackendSyncedSettingsBadge() {
       className="flex items-center"
     >
       <Typography.Text className="text-[11px] font-medium text-text-secondary leading-5">
-        {t(I18nKey.SETTINGS$BACKEND_SYNCED_BADGE, {
-          name,
-          host: active.backend.host,
-          interpolation: { escapeValue: false },
-        })}
+        {t(I18nKey.SETTINGS$BACKEND_SYNCED_BADGE, { name })}
       </Typography.Text>
     </div>
   );

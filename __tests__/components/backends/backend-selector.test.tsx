@@ -812,6 +812,17 @@ describe("BackendSelector", () => {
     },
   );
 
+  it("offers FreeHands Cloud directly in the backend menu", async () => {
+    renderWithProviders(<BackendSelector />);
+
+    const user = await openDropdown();
+    const cloudItem = screen.getByTestId("connect-cloud-menu-item");
+    expect(cloudItem).toHaveTextContent("FreeHands Cloud");
+
+    await user.click(cloudItem);
+    expect(await screen.findByTestId("add-backend-modal")).toBeInTheDocument();
+  });
+
   it("renders the backend footer actions and opens/closes the add modal", async () => {
     renderWithProviders(<BackendSelector />);
 

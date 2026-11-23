@@ -13,7 +13,10 @@ import { isOliAgentProfileName } from "#/constants/oli-agent";
  * still on the seeded `default` OpenHands profile is migrated onto the Oli
  * profile once an LLM profile exists. Re-running when the active LLM profile
  * changes is deliberate: selecting a new model must also move Oli onto that
- * model, not leave it pinned to a stale profile.
+ * model, not leave it pinned to a stale profile. An already-active Oli profile
+ * is re-ensured too, because that call is what repairs a profile saved with a
+ * retired tool (a name the server registry no longer knows, which aborts
+ * conversation startup).
  *
  * Deliberate choices are respected: an active ACP profile or a named custom
  * profile is never replaced. Cloud is skipped because it does not apply profile
@@ -47,15 +50,12 @@ export function useEnsureOliAgent(): void {
         profile.id != null &&
         profile.id === agentProfiles.active_agent_profile_id,
     );
-    if (active && isOliAgentProfileName(active.name)) {
-      attemptedRef.current = attemptKey;
-      return;
-    }
+    const activeIsOli = active != null && isOliAgentProfileName(active.name);
     // Only migrate the baseline / no-selection state. A named custom profile or
     // an ACP agent is a deliberate choice and must not be overridden.
     const isBaseline =
       !active || active.name === WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME;
-    if (!isBaseline) {
+    if (!isBaseline && !activeIsOli) {
       attemptedRef.current = attemptKey;
       return;
     }

@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useMatch, useNavigate } from "react-router";
-import { Plus, Settings } from "lucide-react";
+import { Cloud, Plus, Settings } from "lucide-react";
 import { Dropdown } from "#/ui/dropdown/dropdown";
 import { DropdownOption } from "#/ui/dropdown/types";
 import { getLockedCloudHost } from "#/api/agent-server-config";
@@ -14,6 +14,7 @@ import {
   type BackendHealth,
 } from "#/hooks/query/use-backends-health";
 import { I18nKey } from "#/i18n/declaration";
+import { FREEHANDS_CLOUD_NAME } from "#/constants/freehands-cloud";
 import type { Backend } from "#/api/backend-registry/types";
 // Import the trigger helpers from the lightweight store, not the overlay
 // component, so the eagerly-mounted sidebar/backend-selector graph does not
@@ -270,6 +271,25 @@ export function BackendSelector({
 
   const addBackendFooter = hideBackendFooter ? undefined : (
     <div className={dropdownMenuListClassName}>
+      {isLockedToCloud ? null : (
+        <button
+          type="button"
+          data-testid="connect-cloud-menu-item"
+          onMouseDown={preventDropdownMenuClose}
+          onTouchStart={preventDropdownMenuClose}
+          onTouchEnd={handleAddBackendTouchEnd}
+          onClick={handleAddBackendClick}
+          className={cn(
+            dropdownFooterActionClassName,
+            "cursor-pointer rounded-md",
+          )}
+        >
+          <span className={dropdownMenuRowIconWrapperClassName} aria-hidden>
+            <Cloud width={16} height={16} />
+          </span>
+          {FREEHANDS_CLOUD_NAME}
+        </button>
+      )}
       {isLockedToCloud ? null : (
         <button
           type="button"

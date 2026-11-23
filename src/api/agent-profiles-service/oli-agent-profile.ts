@@ -1,16 +1,20 @@
 import AgentProfilesService from "#/api/agent-profiles-service/agent-profiles-service.api";
 import ProfilesService from "#/api/profiles-service/profiles-service.api";
+import ToolCatalogService from "#/api/tool-catalog-service/tool-catalog-service.api";
 import {
   agentProfileSupportsInstructions,
   agentProfileSupportsTools,
 } from "#/api/agent-profiles-service/profile-field-support";
 import {
   buildOliAgentProfile,
+  filterOliToolsToCatalog,
   isOliAgentProfileName,
   OLI_AGENT_PROFILE_NAME,
   OLI_PERSONA,
   OLI_TOOL_SPECS,
+  stripRetiredOliTools,
 } from "#/constants/oli-agent";
+import type { ProfileToolSpec } from "#/constants/profile-tools";
 
 export interface EnsureOliResult {
   /** The profile the conversation will launch from. */
@@ -35,6 +39,23 @@ async function resolveLlmProfileRef(): Promise<string | null> {
   );
   const withKey = list.profiles.find((profile) => profile.api_key_set);
   return active?.name ?? withKey?.name ?? list.profiles[0]?.name ?? null;
+}
+
+/**
+ * Oli's reviewed tool list, minus anything this server cannot resolve. A name
+ * the registry does not know aborts conversation startup, so the catalog is
+ * authoritative here; if it cannot be read, the reviewed list is used as-is.
+ */
+async function resolveOliTools(): Promise<ProfileToolSpec[]> {
+  try {
+    const catalog = await ToolCatalogService.getCatalog();
+    const usable = catalog
+      .filter((entry) => entry.usable)
+      .map((entry) => entry.name);
+    return filterOliToolsToCatalog(OLI_TOOL_SPECS, usable);
+  } catch {
+    return OLI_TOOL_SPECS;
+  }
 }
 
 /**
@@ -86,19 +107,36 @@ export async function ensureOliAgentProfile(): Promise<EnsureOliResult> {
     // created by hand as a rename of the OpenHands profile). Add the persona
     // and the advanced tool set only where the user has not set their own —
     // that is exactly the profile that still introduced itself as OpenHands.
-    if (includeInstructions) {
+    if (includeInstructions || includeTools) {
       try {
         const detail = await AgentProfilesService.getProfile(existing.name);
         const profile = detail.profile;
-        if (profile.agent_kind === "openhands" && !profile.persona) {
-          await AgentProfilesService.saveProfile(existing.name, {
-            ...profile,
-            persona: OLI_PERSONA,
-            system_message_suffix: profile.system_message_suffix ?? null,
-            ...(includeTools && profile.tools == null
-              ? { tools: OLI_TOOL_SPECS }
-              : {}),
-          });
+        if (profile.agent_kind === "openhands") {
+          const repairedTools = includeTools
+            ? stripRetiredOliTools(profile.tools)
+            : null;
+          const toolsChanged =
+            includeTools &&
+            profile.tools != null &&
+            repairedTools != null &&
+            repairedTools.length !== profile.tools.length;
+          const needsPersona = includeInstructions && !profile.persona;
+
+          if (needsPersona || toolsChanged) {
+            const nextTools = !includeTools
+              ? undefined
+              : repairedTools == null
+                ? await resolveOliTools()
+                : repairedTools.length > 0
+                  ? repairedTools
+                  : null;
+            await AgentProfilesService.saveProfile(existing.name, {
+              ...profile,
+              ...(needsPersona ? { persona: OLI_PERSONA } : {}),
+              system_message_suffix: profile.system_message_suffix ?? null,
+              ...(nextTools !== undefined ? { tools: nextTools } : {}),
+            });
+          }
         }
       } catch {
         // Best-effort upgrade; activation below still proceeds.
@@ -130,14 +168,15 @@ export async function ensureOliAgentProfile(): Promise<EnsureOliResult> {
   }
 
   try {
-    await AgentProfilesService.saveProfile(
-      OLI_AGENT_PROFILE_NAME,
-      buildOliAgentProfile({
-        llmProfileRef,
-        includeInstructions,
-        includeTools,
-      }),
-    );
+    const profile = buildOliAgentProfile({
+      llmProfileRef,
+      includeInstructions,
+      includeTools,
+    });
+    if (includeTools && profile.agent_kind === "openhands") {
+      profile.tools = await resolveOliTools();
+    }
+    await AgentProfilesService.saveProfile(OLI_AGENT_PROFILE_NAME, profile);
     const detail = await AgentProfilesService.getProfile(
       OLI_AGENT_PROFILE_NAME,
     );

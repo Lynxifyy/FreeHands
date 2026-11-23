@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   saveProfile: vi.fn(),
   activateProfile: vi.fn(),
   listLlmProfiles: vi.fn(),
+  getCatalog: vi.fn(),
   supportsInstructions: vi.fn(() => true),
   supportsTools: vi.fn(() => true),
 }));
@@ -21,6 +22,10 @@ vi.mock("#/api/agent-profiles-service/agent-profiles-service.api", () => ({
 
 vi.mock("#/api/profiles-service/profiles-service.api", () => ({
   default: { listProfiles: mocks.listLlmProfiles },
+}));
+
+vi.mock("#/api/tool-catalog-service/tool-catalog-service.api", () => ({
+  default: { getCatalog: mocks.getCatalog },
 }));
 
 vi.mock("#/api/agent-profiles-service/profile-field-support", () => ({
@@ -51,6 +56,7 @@ describe("ensureOliAgentProfile", () => {
     vi.clearAllMocks();
     mocks.supportsInstructions.mockReturnValue(true);
     mocks.supportsTools.mockReturnValue(true);
+    mocks.getCatalog.mockRejectedValue(new Error("catalog unavailable"));
   });
 
   it("activates an existing Oli profile without overwriting it", async () => {
@@ -153,6 +159,40 @@ describe("ensureOliAgentProfile", () => {
         llm_profile_ref: "deepseek",
         persona: OLI_PERSONA,
         tools: OLI_TOOL_SPECS,
+      }),
+    );
+  });
+
+  it("repairs an Oli profile that still lists retired tools", async () => {
+    mocks.listLlmProfiles.mockResolvedValue(
+      llmProfiles("deepseek", ["deepseek"]),
+    );
+    mocks.listProfiles.mockResolvedValue({
+      profiles: [summary({ id: "oli-id", name: "Oli" })],
+      active_agent_profile_id: "oli-id",
+    });
+    mocks.getProfile.mockResolvedValue({
+      name: "Oli",
+      profile: {
+        id: "oli-id",
+        name: "Oli",
+        agent_kind: "openhands",
+        llm_profile_ref: "deepseek",
+        persona: OLI_PERSONA,
+        tools: [
+          { name: "terminal", params: {} },
+          { name: "file_builder", params: {} },
+        ],
+      },
+    });
+
+    await ensureOliAgentProfile();
+
+    expect(mocks.saveProfile).toHaveBeenCalledWith(
+      "Oli",
+      expect.objectContaining({
+        persona: OLI_PERSONA,
+        tools: [{ name: "terminal", params: {} }],
       }),
     );
   });
