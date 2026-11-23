@@ -28,7 +28,7 @@
  */
 
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { access, constants, readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -611,6 +611,33 @@ function createStaticMiddleware(dirAbs) {
   });
 }
 
+// sirv streams the file and never surfaces open failures, so an unreadable
+// asset would leave the response hanging (or crash the process). Detect it
+// first and answer 404.
+async function hasUnreadableAsset(dirAbs, urlPath) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath);
+  } catch {
+    return false;
+  }
+
+  const candidates = decoded.endsWith("/")
+    ? [`${decoded}index.html`]
+    : [decoded, `${decoded}/index.html`];
+
+  for (const candidate of candidates) {
+    const target = resolve(dirAbs, `.${candidate}`);
+    if (!target.startsWith(dirAbs)) continue;
+    try {
+      await access(target, constants.R_OK);
+    } catch (error) {
+      if (error?.code === "EACCES") return true;
+    }
+  }
+  return false;
+}
+
 async function handleStatic(
   req,
   res,
@@ -650,6 +677,11 @@ async function handleStatic(
 
   const mountedReq = Object.create(req);
   mountedReq.url = mountedUrl;
+
+  if (await hasUnreadableAsset(dirAbs, mountedPath)) {
+    notFound(res);
+    return;
+  }
 
   staticMiddleware(mountedReq, res, async () => {
     if (matchesAnyPrefix(mountedPath, rejectPrefixes)) {
