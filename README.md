@@ -97,7 +97,7 @@ docker run -it --rm \
   -e AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true \
   -v "$HOME/.openhands:/home/openhands/.openhands" \
   -v "${PROJECTS_PATH}:/projects" \
-  ghcr.io/lynxifyy/freehands-agent-canvas:1.32.0 # x-release-please-version
+  ghcr.io/lynxifyy/freehands-agent-canvas:1.33.0 # x-release-please-version
 ```
 
 **Windows (PowerShell / Windows Terminal):** See [README.windows.md](./README.windows.md) for the equivalent commands.
@@ -176,7 +176,7 @@ The Agent Server API is implemented by the SDK and consumed through the TypeScri
 The fork publishes its own all-in-one image:
 
 ```bash
-docker pull ghcr.io/lynxifyy/freehands-agent-canvas:1.32.0 # x-release-please-version
+docker pull ghcr.io/lynxifyy/freehands-agent-canvas:1.33.0 # x-release-please-version
 ```
 
 It bundles the Canvas frontend, agent-server, automation service, and the
