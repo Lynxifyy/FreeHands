@@ -34,13 +34,13 @@ describe("AndroidUpdateSection", () => {
     mocks.platform = "android";
     mocks.isError = false;
     mocks.release = {
-      tagName: "v1.31.0",
-      version: "1.31.0",
-      name: "v1.31.0",
+      tagName: "v99.0.0",
+      version: "99.0.0",
+      name: "v99.0.0",
       body: "### Fixes\n\n- Fixed the thing",
       htmlUrl: "https://example.test/release",
       publishedAt: "2026-11-22T00:00:00Z",
-      apkUrl: "https://example.test/agent-canvas-1.31.0.apk",
+      apkUrl: "https://example.test/agent-canvas-99.0.0.apk",
     };
   });
 
@@ -50,7 +50,7 @@ describe("AndroidUpdateSection", () => {
     expect(screen.getByTestId("android-update-section")).toBeInTheDocument();
     expect(screen.getByTestId("android-update-install")).toHaveAttribute(
       "href",
-      "https://example.test/agent-canvas-1.31.0.apk",
+      "https://example.test/agent-canvas-99.0.0.apk",
     );
     expect(screen.getByText("SETTINGS$ANDROID_WHATS_NEW")).toBeInTheDocument();
     expect(screen.getByText(/Fixed the thing/)).toBeInTheDocument();
