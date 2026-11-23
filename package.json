@@ -1,17 +1,17 @@
 {
   "name": "@openhands/agent-canvas",
-  "version": "1.31.0",
+  "version": "1.32.0",
   "description": "Agent Canvas UI for OpenHands - run AI coding agents with a visual interface",
   "license": "MIT",
   "private": false,
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenHands/OpenHands"
+    "url": "https://github.com/Lynxifyy/FreeHands"
   },
-  "homepage": "https://github.com/OpenHands/OpenHands#readme",
+  "homepage": "https://github.com/Lynxifyy/FreeHands#readme",
   "bugs": {
-    "url": "https://github.com/OpenHands/OpenHands/issues"
+    "url": "https://github.com/Lynxifyy/FreeHands/issues"
   },
   "bin": {
     "agent-canvas": "bin/agent-canvas.mjs"

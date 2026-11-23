@@ -93,9 +93,12 @@ ARG VITE_BASE_PATH="/canvas"
 ARG VITE_POSTHOG_API_KEY=""
 
 ARG AGENT_CANVAS_VERSION=dev
-LABEL org.opencontainers.image.title="agent-canvas"
-LABEL org.opencontainers.image.description="All-in-one agent-canvas: Agent Server + Automation + Frontend"
-LABEL org.opencontainers.image.source="https://github.com/OpenHands/OpenHands"
+# OpenCode ACP provider installed on top of the base image so Complex Code works
+# out of the box. Keep in lockstep with the SDK catalog (OPENCODE_VERSION).
+ARG OPENCODE_VERSION=1.18.23
+LABEL org.opencontainers.image.title="freehands-agent-canvas"
+LABEL org.opencontainers.image.description="All-in-one FreeHands: Agent Server + Automation + Frontend + coding agents"
+LABEL org.opencontainers.image.source="https://github.com/Lynxifyy/FreeHands"
 LABEL org.opencontainers.image.version="${AGENT_CANVAS_VERSION}"
 LABEL org.opencontainers.image.revision="${OPENHANDS_BUILD_GIT_SHA}"
 
@@ -128,6 +131,7 @@ RUN if command -v apt-get >/dev/null 2>&1; then \
         > /etc/apt/sources.list.d/debian.sources && \
       apt-get update && \
       apt-get upgrade -y --no-install-recommends && \
+      apt-get install -y --no-install-recommends curl && \
       rm -rf /var/lib/apt/lists/*; \
     fi
 
@@ -151,6 +155,24 @@ RUN if [ -n "${AGENT_SERVER_SDK_GIT_REF}" ]; then \
 RUN if [ -n "${LITELLM_GIT_REF}" ]; then \
       uv pip install --system --force-reinstall \
         "git+${LITELLM_GIT_REPO}@${LITELLM_GIT_REF}"; \
+    fi
+
+# ── ACP coding agents ────────────────────────────────────────────────────────
+# The upstream agent-server base image preinstalls claude-code, codex and
+# gemini-cli but not OpenCode. Complex Code runs OpenCode, so install it here
+# and leave the npm cache warm: the SDK launches it with
+# `npx -y --prefer-offline opencode-ai@<version> acp`, which then resolves
+# without a network round-trip. The wrapper also makes `opencode` available on
+# PATH for the ACP provider detection.
+RUN if [ -x /acp-node/bin/npm ]; then \
+      PATH="/acp-node/bin:$PATH" /acp-node/bin/npm install --global \
+        "opencode-ai@${OPENCODE_VERSION}" && \
+      printf '#!/bin/sh\nPATH="/acp-node/bin:$PATH" exec "/acp-node/bin/opencode" "$@"\n' \
+        > /usr/local/bin/opencode && \
+      chmod +x /usr/local/bin/opencode && \
+      /usr/local/bin/opencode --version; \
+    else \
+      echo "Warning: /acp-node is unavailable; OpenCode was not installed" >&2; \
     fi
 
 # Copy the frontend build output.
@@ -215,5 +237,8 @@ VOLUME ["/home/openhands/.openhands", "/projects"]
 # The entrypoint starts all services and the ingress proxy.
 # Port 8000 is the unified entry point.
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
 ENTRYPOINT ["tini", "--", "/opt/agent-canvas/entrypoint.sh"]

@@ -1,6 +1,8 @@
 {
   "name": "freehands-tools",
-  "owner": { "name": "FreeHands" },
+  "owner": {
+    "name": "FreeHands"
+  },
   "description": "Practical, read-only-first plugins for FreeHands/Oli: repository health, release notes, mobile UI review and dependency upgrades.",
   "plugins": [
     {
@@ -26,6 +28,12 @@
       "source": "./plugins/dependency-upgrade-check",
       "description": "Find outdated and vulnerable dependencies, then prepare a safe, tested upgrade plan.",
       "category": "quality"
+    },
+    {
+      "name": "freehands-coding-tools",
+      "source": "./plugins/freehands-coding-tools",
+      "description": "46 real coding tools for Oli: git, tests/lint/build, dependency and secret audits, code intelligence, file edits, HTTP/port probes, and Mobilebox live phones.",
+      "category": "coding"
     }
   ]
 }

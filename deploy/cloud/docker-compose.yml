@@ -1,0 +1,62 @@
+# FreeHands cloud stack: the all-in-one image behind automatic HTTPS.
+#
+#   cp .env.example .env && edit it
+#   docker compose up -d
+#
+# Caddy obtains and renews the TLS certificate for FREEFHANDS_DOMAIN.
+name: freehands
+
+services:
+  canvas:
+    image: ghcr.io/lynxifyy/freehands-agent-canvas:${FREEFHANDS_VERSION:-latest}
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Empty values let the entrypoint generate and persist secure keys.
+      SESSION_API_KEY: ${SESSION_API_KEY:-}
+      OH_SECRET_KEY: ${OH_SECRET_KEY:-}
+      AGENT_CANVAS_ALLOW_LAN_SESSION_KEY: ${AGENT_CANVAS_ALLOW_LAN_SESSION_KEY:-false}
+      # Coding-agent and Mobilebox credentials for the bundled tools.
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      OPENCODE_AUTH_CONTENT: ${OPENCODE_AUTH_CONTENT:-}
+      MOBILESANDBOX_API_KEY: ${MOBILESANDBOX_API_KEY:-}
+    volumes:
+      - freehands-state:/home/openhands/.openhands
+      - freehands-projects:/projects
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    security_opt:
+      - no-new-privileges:true
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      FREEFHANDS_DOMAIN: ${FREEFHANDS_DOMAIN:?set FREEFHANDS_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      canvas:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  freehands-state:
+  freehands-projects:
+  caddy-data:
+  caddy-config:

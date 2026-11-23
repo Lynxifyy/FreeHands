@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Play } from "lucide-react";
 import {
   OpenHandsEvent,
   ActionEvent,
@@ -66,6 +67,24 @@ function getSkillKnowledge(
       : null;
   }
   return null;
+}
+
+/**
+ * Extract the Mobilebox live-viewer URL from a tool result. The server returns
+ * it as `viewer_url`; the event carries the JSON result, so a narrow regex over
+ * the serialized event is enough and works for MCP observations too.
+ */
+export function getMobileboxViewerUrl(
+  event: OpenHandsEvent | SkillReadyEvent,
+): string | null {
+  try {
+    const match = JSON.stringify(event).match(
+      /https:\/\/mobilebox\.dev\/watch#[^\s"\\]+/,
+    );
+    return match ? match[0] : null;
+  } catch {
+    return null;
+  }
 }
 
 type EventPillStatus = "running" | "success" | "error" | "timeout";
@@ -161,6 +180,7 @@ export function GenericEventMessageWrapper({
     !isSkillReadyEvent(event) && isObservationEvent(event)
       ? formatDuration(correspondingAction?.timestamp, event.timestamp)
       : null;
+  const mobileboxViewerUrl = getMobileboxViewerUrl(event);
 
   // Skill Ready events and invoke-skill tool observations both render the
   // expandable skill-knowledge list (with the skills icon); they differ only in
@@ -191,6 +211,18 @@ export function GenericEventMessageWrapper({
         timestamp={event.timestamp}
         titleTrailing={
           <>
+            {mobileboxViewerUrl ? (
+              <a
+                data-testid="mobilebox-watch-link"
+                href={mobileboxViewerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em] text-primary transition-colors hover:bg-primary/20"
+              >
+                <Play className="size-3" aria-hidden />
+                {t(I18nKey.CHAT$WATCH_MOBILEBOX)}
+              </a>
+            ) : null}
             {duration ? (
               <span className="ml-2 shrink-0 font-mono text-[10px] text-muted">
                 {duration}

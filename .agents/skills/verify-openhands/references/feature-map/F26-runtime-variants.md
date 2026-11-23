@@ -41,7 +41,7 @@ Source: `bin/agent-canvas.mjs`, `scripts/dev-with-automation.mjs`, `scripts/dev-
 - `F26.lib-build`: `npm run build:lib` produces `dist/` where every `package.json` `exports` target exists and the main entry exports `AgentServerUIProviders`, `AgentServerUIRoot`, `CloudOrganizationBoundary` and the telemetry helpers.
 - `F26.lib-style-scope`: all bundled CSS is scoped under `[data-agent-server-ui]`, and theme tokens such as `--oh-color-base` live on that scope root (observable in the standalone app).
 - `F26.lib-host-app`: mounted in a separate host app, Canvas styles stay inside the scope and `styleOverrides` restyle it. Blocked: no host-app example exists.
-- `F26.docker-image`: `docker run ghcr.io/openhands/agent-canvas` serves Canvas at `/canvas`; without `AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true` the UI asks for the key. Blocked without a Docker daemon. On a host whose kernel has no IPv6 (no `/proc/net/if_inet6`) the entrypoint logs `IPv6 is not available; binding the frontend to 0.0.0.0.` and the container keeps running (#18180).
+- `F26.docker-image`: `docker run ghcr.io/lynxifyy/freehands-agent-canvas` serves Canvas at `/canvas`; without `AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true` the UI asks for the key. Blocked without a Docker daemon. On a host whose kernel has no IPv6 (no `/proc/net/if_inet6`) the entrypoint logs `IPv6 is not available; binding the frontend to 0.0.0.0.` and the container keeps running (#18180).
 - `F26.docker-conversation-runtime`: `OH_CONVERSATION_RUNTIME=docker` runs each new conversation in its own container. Blocked without a Docker daemon.
 - `F26.helm-chart`: `helm install agent-canvas ./helm/agent-canvas` runs the Docker image as a Kubernetes StatefulSet with a PVC and an Ingress. Blocked without `helm` and a cluster.
 - `F26.desktop-boot-splash`: the Electron app first shows a dark splash (logo, **OpenHands Agent Canvas**, spinner, `Starting backend services…`, then live service-log lines, a first-launch note and **Show details**).
@@ -56,7 +56,7 @@ Source: `bin/agent-canvas.mjs`, `scripts/dev-with-automation.mjs`, `scripts/dev-
 - Backend selector (`backend-selector`) → **Add Backend** (`add-backend-menu-item`) → **Agent-server** → **Remote**, and **Manage Backends** to remove it (see F25 for the backend registry itself).
 - Public mode and the API-key screen are mapped in F01 (`F01.api-key-entry`, `F01.onboarding-backend-step`).
 - `npm run build:lib` for the embeddable library; a host app imports `@openhands/agent-canvas` (see `docs/DEVELOPMENT.md`, "Cloud organization recovery in embedded hosts").
-- `docker run ... ghcr.io/openhands/agent-canvas` or `npm run build:docker`, then `http://localhost:8000/canvas`.
+- `docker run ... ghcr.io/lynxifyy/freehands-agent-canvas` or `npm run build:docker`, then `http://localhost:8000/canvas`.
 - `helm install agent-canvas ./helm/agent-canvas` on a Kubernetes cluster (`helm/agent-canvas/README.md`).
 - `npm run desktop` (development) or a packaged build from `npm run build:desktop`; the window opens itself.
 - ACP agents (Claude Code, Codex, Gemini CLI) are chosen in onboarding (F01) and Settings → Agents (F13); this family does not repeat them.

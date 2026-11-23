@@ -13,7 +13,6 @@ import { normalizeLlmModelId } from "#/utils/normalize-llm-model";
 import { formControlSettingsFieldClassName } from "#/utils/form-control-classes";
 import { heroUiAutocompleteSelectorButtonClassName } from "#/ui/combobox-caret";
 import { HelpLink } from "#/ui/help-link";
-import { PRODUCT_URL } from "#/utils/constants";
 import { useSearchProviders } from "#/hooks/query/use-search-providers";
 import { useProviderModels } from "#/hooks/query/use-provider-models";
 import { FREE_MODEL_BADGE_LABEL } from "#/utils/format-model-name";
@@ -219,7 +218,6 @@ export function ModelSelector({
             testId="openhands-account-help"
             text={t(I18nKey.SETTINGS$NEED_OPENHANDS_ACCOUNT)}
             linkText={t(I18nKey.SETTINGS$CLICK_HERE)}
-            href={PRODUCT_URL.PRODUCTION}
             size="settings"
             linkColor="white"
           />

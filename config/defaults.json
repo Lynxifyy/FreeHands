@@ -2,8 +2,9 @@
   "_comment": "Single source of truth for version pins, ports, paths, and defaults shared across the npm and Docker install paths. Read by scripts/dev-safe.mjs, scripts/dev-with-automation.mjs, docker/entrypoint.sh (via generated defaults.env), and .github/workflows/docker.yml.",
   "versions": {
     "agentServer": "1.55.0",
-    "agentCanvas": "1.31.0",
-    "automation": "1.20.0"
+    "agentCanvas": "1.32.0",
+    "automation": "1.20.0",
+    "opencode": "1.18.23"
   },
   "sdkSource": {
     "_comment": "Where the agent-server SDK is installed from when the app provisions its own backend (the npm launcher's uvx path and the Docker image). This fork carries the DeepSeek v4/DSML and announced-action fixes, so it is the default; pin gitRef to an immutable commit for reproducible installs and bump it when the fork advances. Overridable per-run by OH_AGENT_SERVER_LOCAL_PATH (dev checkout), OH_AGENT_SERVER_GIT_REF (any ref), or OH_AGENT_SERVER_VERSION (stock PyPI). A Cloud backend runs agent-server on OpenHands' servers, so the SDK there is whatever that deployment installed — the app can read it via /server_info (see the Settings version card) but cannot change it.",
@@ -20,7 +21,7 @@
   },
   "images": {
     "agentServer": "ghcr.io/openhands/agent-server",
-    "agentCanvas": "ghcr.io/openhands/agent-canvas"
+    "agentCanvas": "ghcr.io/lynxifyy/freehands-agent-canvas"
   },
   "ports": {
     "agentServer": 18000,

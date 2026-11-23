@@ -199,3 +199,38 @@ describe("AcpService.discoverModels", () => {
     });
   });
 });
+
+describe("AcpService.getOpenCodeReadiness", () => {
+  it("reports an installed, authenticated OpenCode", async () => {
+    executeCommand
+      .mockResolvedValueOnce(bashOutput({ stdout: "installed\n" }))
+      .mockResolvedValueOnce(bashOutput({ stdout: "present\n" }));
+
+    await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
+      installed: true,
+      authenticated: "authenticated",
+    });
+  });
+
+  it("reports a missing OpenCode binary", async () => {
+    executeCommand
+      .mockResolvedValueOnce(bashOutput({ stdout: "missing\n" }))
+      .mockResolvedValueOnce(bashOutput({ stdout: "absent\n" }));
+
+    await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
+      installed: false,
+      authenticated: "unauthenticated",
+    });
+  });
+
+  it("reports an installed but unauthenticated OpenCode", async () => {
+    executeCommand
+      .mockResolvedValueOnce(bashOutput({ stdout: "installed\n" }))
+      .mockResolvedValueOnce(bashOutput({ stdout: "absent\n" }));
+
+    await expect(AcpService.getOpenCodeReadiness()).resolves.toEqual({
+      installed: true,
+      authenticated: "unauthenticated",
+    });
+  });
+});

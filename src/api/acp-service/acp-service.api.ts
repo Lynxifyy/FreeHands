@@ -86,6 +86,13 @@ const ACP_AUTH_PROBES: Record<string, AcpAuthProbe> = {
       'test -f "$HOME/.gemini/oauth_creds.json" && echo present || echo absent',
     classify: classifyPresence,
   },
+  // OpenCode reads its whole auth store from OPENCODE_AUTH_CONTENT (or
+  // OPENCODE_API_KEY) ahead of the on-disk auth.json.
+  opencode: {
+    command:
+      '{ [ -n "$OPENCODE_AUTH_CONTENT" ] || [ -n "$OPENCODE_API_KEY" ] || grep -qs \'"type"\' "$HOME/.local/share/opencode/auth.json"; } && echo present || echo absent',
+    classify: classifyPresence,
+  },
   // Pi seeds an empty ``{}`` auth.json on first run, so require an entry.
   pi: {
     command:
@@ -115,6 +122,36 @@ class AcpService {
       getAgentServerClientOptions(),
     ).executeCommand(probe.command, undefined, PROBE_TIMEOUT_SECONDS);
     return probe.classify(out);
+  }
+
+  /**
+   * Check whether OpenCode is installed and authenticated on the (local)
+   * agent-server. Complex Code runs OpenCode; this turns an opaque launch
+   * failure into an actionable install/credential message.
+   */
+  static async getOpenCodeReadiness(): Promise<{
+    installed: boolean | null;
+    authenticated: AcpAuthStatus;
+  }> {
+    try {
+      const out = await new BashClient(
+        getAgentServerClientOptions(),
+      ).executeCommand(
+        "if command -v opencode >/dev/null 2>&1; then echo installed; else echo missing; fi",
+        undefined,
+        PROBE_TIMEOUT_SECONDS,
+      );
+      const installed =
+        (out.stdout ?? "").trim() === "installed"
+          ? true
+          : (out.stdout ?? "").trim() === "missing"
+            ? false
+            : null;
+      const authenticated = await this.getAuthStatus("opencode");
+      return { installed, authenticated };
+    } catch {
+      return { installed: null, authenticated: "unknown" };
+    }
   }
 
   /**

@@ -27,6 +27,11 @@ const agentServerImage = `${config.images.agentServer}:${config.versions.agentSe
 const agentServerVersion = config.versions.agentServer;
 const automationVersion = config.versions.automation;
 const canvasBasePath = config.paths.canvasBasePath;
+const opencodeVersion = config.versions.opencode ?? "";
+const sdkRepo = config.sdkSource?.gitRepo ?? "";
+const sdkRef = config.sdkSource?.gitRef ?? "";
+const litellmRepo = config.litellmSource?.gitRepo ?? "";
+const litellmRef = config.litellmSource?.gitRef ?? "";
 
 // Parse CLI: --tag <name> and everything after -- is passed to docker build
 let tag = "agent-canvas:local";
@@ -56,6 +61,16 @@ const cmd = [
   `AUTOMATION_VERSION=${automationVersion}`,
   "--build-arg",
   `VITE_BASE_PATH=${canvasBasePath}`,
+  "--build-arg",
+  `OPENCODE_VERSION=${opencodeVersion}`,
+  "--build-arg",
+  `AGENT_SERVER_SDK_GIT_REPO=${sdkRepo}`,
+  "--build-arg",
+  `AGENT_SERVER_SDK_GIT_REF=${sdkRef}`,
+  "--build-arg",
+  `LITELLM_GIT_REPO=${litellmRepo}`,
+  "--build-arg",
+  `LITELLM_GIT_REF=${litellmRef}`,
   "-t",
   tag,
   ...extraArgs,

@@ -6,6 +6,8 @@ import AgentProfilesService, {
 import { useSaveAgentProfile } from "#/hooks/mutation/use-save-agent-profile";
 import { useActivateAgentProfile } from "#/hooks/mutation/use-activate-agent-profile";
 import { useSaveSettings } from "#/hooks/mutation/use-save-settings";
+import { useActiveBackend } from "#/contexts/active-backend-context";
+import AcpService from "#/api/acp-service/acp-service.api";
 import { I18nKey } from "#/i18n/declaration";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message";
@@ -42,6 +44,8 @@ export function useApplyConversationAgentMode() {
   const saveProfile = useSaveAgentProfile();
   const activateProfile = useActivateAgentProfile();
   const { mutateAsync: saveSettings } = useSaveSettings();
+  const { backend } = useActiveBackend();
+  const isLocal = backend.kind === "local";
 
   const activateProfileByName = useCallback(
     async (name: string): Promise<string | null> => {
@@ -64,6 +68,20 @@ export function useApplyConversationAgentMode() {
 
       try {
         if (mode === "complex") {
+          // OpenCode lives on the agent server. Check it before switching so a
+          // missing binary or missing credentials becomes an actionable
+          // message instead of an opaque launch failure.
+          if (isLocal) {
+            const readiness = await AcpService.getOpenCodeReadiness();
+            if (readiness.installed === false) {
+              displayErrorToast(t(I18nKey.COMPLEX_CODE$OPENCODE_MISSING));
+              return { ok: false };
+            }
+            if (readiness.authenticated === "unauthenticated") {
+              displayErrorToast(t(I18nKey.COMPLEX_CODE$OPENCODE_AUTH));
+              return { ok: false };
+            }
+          }
           await saveProfile.mutateAsync({
             name: COMPLEX_CODE_PROFILE_NAME,
             profile: complexCodeAgentProfile(),
@@ -75,13 +93,18 @@ export function useApplyConversationAgentMode() {
           WELL_KNOWN_DEFAULT_AGENT_PROFILE_NAME,
         );
         return { ok: !!id, agentProfileId: id ?? undefined };
-      } catch {
+      } catch (error) {
         // Complex Code must land on the ACP profile: the global-settings
         // fallback does not move the active profile, so an older backend would
         // silently launch the native OpenHands agent with its key. Fail loudly
-        // instead of pretending the mode applied.
+        // with the server's own message instead of pretending the mode applied.
         if (mode === "complex") {
-          displayErrorToast(t(I18nKey.ERROR$GENERIC));
+          displayErrorToast(
+            t(I18nKey.COMPLEX_CODE$SWITCH_FAILED, {
+              message:
+                retrieveAxiosErrorMessage(error) || t(I18nKey.ERROR$GENERIC),
+            }),
+          );
           return { ok: false };
         }
         // Code mode can fall back to global settings on an older backend.
@@ -97,7 +120,7 @@ export function useApplyConversationAgentMode() {
         }
       }
     },
-    [activateProfileByName, saveProfile, saveSettings, t],
+    [activateProfileByName, isLocal, saveProfile, saveSettings, t],
   );
 
   return {

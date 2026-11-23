@@ -10,8 +10,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Bumped per release so the in-app updater can compare builds.
-        versionCode 32
-        versionName "1.31.0"
+        versionCode 33
+        versionName "1.32.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Cloud inference route for the agent. Supplied at build time (never
         // committed): gradle properties, environment, or an empty default that

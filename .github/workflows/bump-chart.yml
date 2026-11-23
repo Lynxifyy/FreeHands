@@ -5,7 +5,7 @@
 #
 # agent-canvas releases are cut by release-please: merging its release PR pushes
 # a vX.Y.Z tag, which runs "Docker" to publish
-# ghcr.io/openhands/agent-canvas:X.Y.Z. This workflow watches for those
+# ghcr.io/lynxifyy/freehands-agent-canvas:X.Y.Z. This workflow watches for those
 # tag-triggered "Docker" runs and bumps the chart.
 name: Bump chart image tag
 

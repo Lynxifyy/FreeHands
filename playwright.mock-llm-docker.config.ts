@@ -23,7 +23,7 @@
  *
  * Required:
  *   - A built Docker image. Set MOCK_LLM_DOCKER_IMAGE to the image tag
- *     (default: ghcr.io/openhands/agent-canvas:latest).
+ *     (default: ghcr.io/lynxifyy/freehands-agent-canvas:latest).
  *   - Docker daemon must be running.
  */
 
@@ -34,7 +34,7 @@ import { resolve } from "node:path";
 
 // ── Docker image ────────────────────────────────────────────────────────
 const DOCKER_IMAGE =
-  process.env.MOCK_LLM_DOCKER_IMAGE ?? "ghcr.io/openhands/agent-canvas:latest";
+  process.env.MOCK_LLM_DOCKER_IMAGE ?? "ghcr.io/lynxifyy/freehands-agent-canvas:latest";
 
 // Container name for cleanup — unique per run to avoid collisions.
 const CONTAINER_NAME =

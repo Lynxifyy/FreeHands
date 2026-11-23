@@ -20,19 +20,19 @@ describe("npm publish workflow", () => {
     const dockerWorkflow = read(".github/workflows/docker.yml");
 
     expect(packageJson.repository.url).toBe(
-      "https://github.com/OpenHands/OpenHands",
+      "https://github.com/Lynxifyy/FreeHands",
     );
     expect(packageJson.homepage).toBe(
-      "https://github.com/OpenHands/OpenHands#readme",
+      "https://github.com/Lynxifyy/FreeHands#readme",
     );
     expect(packageJson.bugs.url).toBe(
-      "https://github.com/OpenHands/OpenHands/issues",
+      "https://github.com/Lynxifyy/FreeHands/issues",
     );
     expect(dockerfile).toContain(
-      'LABEL org.opencontainers.image.source="https://github.com/OpenHands/OpenHands"',
+      'LABEL org.opencontainers.image.source="https://github.com/Lynxifyy/FreeHands"',
     );
     expect(dockerWorkflow).toContain(
-      "https://github.com/OpenHands/OpenHands/pkgs/container/agent-canvas",
+      "https://github.com/Lynxifyy/FreeHands/pkgs/container/freehands-agent-canvas",
     );
   });
 

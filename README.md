@@ -97,7 +97,7 @@ docker run -it --rm \
   -e AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true \
   -v "$HOME/.openhands:/home/openhands/.openhands" \
   -v "${PROJECTS_PATH}:/projects" \
-  ghcr.io/openhands/agent-canvas:1.31.0 # x-release-please-version
+  ghcr.io/lynxifyy/freehands-agent-canvas:1.32.0 # x-release-please-version
 ```
 
 **Windows (PowerShell / Windows Terminal):** See [README.windows.md](./README.windows.md) for the equivalent commands.
@@ -170,6 +170,25 @@ Agent Canvas is part of a multi-repository OpenHands system. Changes should go t
 | [`OpenHands/automation`](https://github.com/OpenHands/automation)                 | Automation definitions, scheduling, webhooks, run history, and dispatching.                               |
 
 The Agent Server API is implemented by the SDK and consumed through the TypeScript client by Agent Canvas. The automation service decides when work runs and dispatches conversations to the Agent Server/SDK, which decides what runs. See [`AGENTS.md`](./AGENTS.md) for contributor-specific boundaries and the required custom code-review guide.
+
+## FreeHands cloud and Docker
+
+The fork publishes its own all-in-one image:
+
+```bash
+docker pull ghcr.io/lynxifyy/freehands-agent-canvas:1.32.0 # x-release-please-version
+```
+
+It bundles the Canvas frontend, agent-server, automation service, and the
+coding agents (including OpenCode for Complex Code). For a production
+single-host deployment with automatic HTTPS, use
+[`deploy/cloud`](deploy/cloud/README.md): copy `.env.example` to `.env`, set
+`FREEFHANDS_DOMAIN`, and run `docker compose up -d`. For the frontend-only path,
+see [`deploy/static-cloud`](deploy/static-cloud/README.md).
+
+The optional `freehands-coding-tools` plugin adds 46 coding tools (git, tests,
+lint/build, dependency and secret audits, code intelligence, HTTP/port probes,
+and Mobilebox live phones) to Oli.
 
 ## More documentation
 
