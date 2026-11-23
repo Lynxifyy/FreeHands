@@ -44,6 +44,22 @@ import {
   proxyServerInfoRequest,
 } from "./proxy-utils.mjs";
 
+// sirv pipes a file into the response without listening for stream errors, so a
+// single unreadable asset (wrong mode, file removed mid-request) would raise an
+// uncaught error and take the whole container down. Log the read failure and
+// keep serving; anything else is a real crash.
+process.on("uncaughtException", (err) => {
+  const readFailure =
+    err &&
+    err.syscall === "open" &&
+    (err.code === "EACCES" || err.code === "ENOENT" || err.code === "EISDIR");
+  if (readFailure) {
+    console.error(`Static asset read failed: ${err.message}`);
+    return;
+  }
+  throw err;
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SPA fallback helpers
 // ─────────────────────────────────────────────────────────────────────────────

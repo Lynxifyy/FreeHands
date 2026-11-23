@@ -192,6 +192,8 @@ COPY --from=frontend-build /build/build /opt/agent-canvas/frontend
 
 # The marketing site ships with the image and is served at /canvas/site/.
 COPY website /opt/agent-canvas/frontend/site
+# Checkout modes vary; the runtime user must be able to read every asset.
+RUN chmod -R a+rX /opt/agent-canvas/frontend/site
 
 # Copy the static-server scripts and their production runtime deps.
 COPY scripts/static-server.mjs /opt/agent-canvas/static-server.mjs
