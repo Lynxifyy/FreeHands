@@ -32,6 +32,10 @@ vi.mock("#/context/navigation-context", () => ({
 }));
 
 vi.mock("#/contexts/active-backend-context", () => ({
+  useActiveBackendContext: () => ({
+    backends: [],
+    addBackend: vi.fn(),
+  }),
   useActiveBackend: () => ({
     backend: {
       id: "local-id",

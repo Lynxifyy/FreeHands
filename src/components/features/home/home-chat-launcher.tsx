@@ -18,6 +18,7 @@ import { useProjectsStore } from "#/stores/projects-store";
 import { mergeStoredConversationMetadata } from "#/api/conversation-metadata-store";
 import { useApplyConversationAgentMode } from "#/hooks/use-apply-conversation-agent-mode";
 import { LlmNotConfiguredBanner } from "#/components/features/home/llm-not-configured-banner";
+import { CloudSignInBanner } from "#/components/features/home/cloud-sign-in-banner";
 import type { WorkspaceMode } from "#/api/conversation-metadata-store";
 import { setPendingTaskAttachments } from "#/stores/pending-task-attachments-store";
 import { enqueueHomeTaskPendingMessage } from "#/utils/enqueue-home-task-pending-message";
@@ -390,6 +391,10 @@ export function HomeChatLauncher() {
             <LlmNotConfiguredBanner />
           </div>
         ) : null}
+
+        <div className="w-full">
+          <CloudSignInBanner />
+        </div>
 
         <div className="w-full">
           <CustomChatInput

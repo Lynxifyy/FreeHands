@@ -76,6 +76,10 @@ vi.mock("#/context/navigation-context", () => ({
 }));
 
 vi.mock("#/contexts/active-backend-context", () => ({
+  useActiveBackendContext: () => ({
+    backends: [],
+    addBackend: vi.fn(),
+  }),
   useActiveBackend: () => mockUseActiveBackend(),
 }));
 
