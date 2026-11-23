@@ -1,13 +1,13 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="https://assets.openhands.dev/logo-whitebackground.png" alt="OpenHands logo" width="340">
-  <h1 align="center" style="border-bottom: none">Agent Canvas</h1>
+  <img src="./website/assets/oli.svg" alt="Oli, the FreeHands agent" width="96">
+  <h1 align="center" style="border-bottom: none">FreeHands</h1>
   <p align="center">
-    <strong>The self-hosted developer control center for coding agents and automations.</strong>
+    <strong>The self-hosted control center for Oli, your coding agent.</strong>
   </p>
   <p align="center">
-    Run OpenHands, Claude Code, Codex, Gemini, Pi, OpenCode, or any ACP-compatible agent across local, remote, and cloud backends.
+    Run Oli, Claude Code, Codex, Gemini, Pi, OpenCode, or any ACP-compatible agent across local, remote, and cloud backends.
   </p>
 </div>
 <div align="center">
@@ -19,6 +19,7 @@
 </div>
 <div align="center">
   <a href="#quickstart">Quickstart</a> |
+  <a href="./website/index.html">Website</a> |
   <a href="./docs/README.md">Docs</a> |
   <a href="./docs/SELF_HOSTING.md">Self-Hosting</a> |
   <a href="https://docs.openhands.dev/openhands/usage/agent-canvas/acp-agents">ACP Agents</a> |
