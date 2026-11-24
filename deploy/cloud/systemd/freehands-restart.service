@@ -1,0 +1,11 @@
+[Unit]
+Description=Restart the FreeHands stack
+Documentation=https://github.com/Lynxifyy/FreeHands/tree/main/deploy/cloud
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/freehands/deploy/cloud
+ExecStart=/usr/bin/docker compose restart
+TimeoutStartSec=0

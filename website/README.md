@@ -8,7 +8,9 @@ python3 -m http.server 12001 --directory website
 ```
 
 Deploy by publishing the `website/` directory to any static host (GitHub Pages,
-Cloudflare Pages, S3, or the same container).
+Cloudflare Pages, S3), or serve it alongside the app from the always-on Docker
+stack in [`deploy/cloud`](../deploy/cloud/README.md) - that path adds `nginx`,
+`restart: unless-stopped`, a boot unit and a nightly restart.
 
 ## Files
 

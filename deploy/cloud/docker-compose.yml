@@ -1,15 +1,26 @@
-# FreeHands cloud stack: the all-in-one image behind automatic HTTPS.
+# FreeHands cloud stack: the all-in-one image plus the marketing site behind
+# automatic HTTPS.
 #
 #   cp .env.example .env && edit it
 #   docker compose up -d
 #
-# Caddy obtains and renews the TLS certificate for FREEFHANDS_DOMAIN.
+# Caddy obtains and renews the TLS certificate for FREEFHANDS_DOMAIN (app) and
+# FREEFHANDS_SITE_DOMAIN (website). Every service survives host reboots and
+# crash loops through its restart policy; `install.sh` adds a nightly restart
+# and a boot-time bring-up on systemd hosts.
 name: freehands
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   canvas:
     image: ghcr.io/lynxifyy/freehands-agent-canvas:${FREEFHANDS_VERSION:-latest}
     restart: unless-stopped
+    logging: *logging
     env_file:
       - path: .env
         required: false
@@ -33,24 +44,47 @@ services:
       timeout: 5s
       retries: 5
       start_period: 120s
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+  # The marketing site in website/. nginx serves the files read-only from the
+  # checkout, so a `git pull` is enough to publish new copy.
+  site:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    logging: *logging
+    volumes:
+      - ../../website:/usr/share/nginx/html:ro
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     security_opt:
       - no-new-privileges:true
 
   caddy:
     image: caddy:2.9-alpine
     restart: unless-stopped
+    logging: *logging
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
     environment:
       FREEFHANDS_DOMAIN: ${FREEFHANDS_DOMAIN:?set FREEFHANDS_DOMAIN in .env}
+      FREEFHANDS_SITE_DOMAIN: ${FREEFHANDS_SITE_DOMAIN:?set FREEFHANDS_SITE_DOMAIN in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
       canvas:
+        condition: service_healthy
+      site:
         condition: service_healthy
     security_opt:
       - no-new-privileges:true

@@ -11,3 +11,6 @@ fi
 docker compose pull
 docker compose up -d
 docker compose ps
+
+echo
+echo "For a 24/7 install (boot unit + nightly restart): sudo ./install.sh"

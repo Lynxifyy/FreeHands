@@ -1,10 +1,22 @@
 # Automatic HTTPS for the FreeHands cloud stack.
+# FREEFHANDS_DOMAIN serves the app, FREEFHANDS_SITE_DOMAIN the marketing site.
+
 {$FREEFHANDS_DOMAIN} {
-	encode zstd gzip
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-	}
-	reverse_proxy canvas:8000
+        encode zstd gzip
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains"
+                X-Content-Type-Options "nosniff"
+                Referrer-Policy "strict-origin-when-cross-origin"
+        }
+        reverse_proxy canvas:8000
+}
+
+{$FREEFHANDS_SITE_DOMAIN} {
+        encode zstd gzip
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains"
+                X-Content-Type-Options "nosniff"
+                Referrer-Policy "strict-origin-when-cross-origin"
+        }
+        reverse_proxy site:80
 }

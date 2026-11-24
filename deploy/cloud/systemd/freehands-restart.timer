@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly restart of the FreeHands stack
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=10m
+Persistent=true
+Unit=freehands-restart.service
+
+[Install]
+WantedBy=timers.target
