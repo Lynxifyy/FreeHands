@@ -14,6 +14,7 @@ import {
 import { ActiveBackendProvider } from "#/contexts/active-backend-context";
 import { OnboardingModal } from "#/components/features/onboarding/onboarding-modal";
 import { ONBOARDING_DEFAULT_LLM_MODEL } from "#/components/features/onboarding/steps/setup-llm-step";
+import { deriveProfileNameFromModel } from "#/utils/derive-profile-name";
 import { SIDEBAR_ONBOARDING_CHECKLIST_DISMISSED_STORAGE_KEY } from "#/components/features/sidebar/sidebar-onboarding-checklist.constants";
 import { NavigationProvider } from "#/context/navigation-context";
 import SettingsService from "#/api/settings-service/settings-service.api";
@@ -822,13 +823,14 @@ describe("OnboardingModal", () => {
         "2",
       ),
     );
+    const profileName = deriveProfileNameFromModel(ONBOARDING_DEFAULT_LLM_MODEL);
     expect(saveLlmProfileMock).toHaveBeenCalledWith(
-      "gpt-5.6-sol",
+      profileName,
       expect.objectContaining({
         llm: expect.objectContaining({ model: ONBOARDING_DEFAULT_LLM_MODEL }),
       }),
     );
-    expect(activateLlmProfileMock).toHaveBeenCalledWith("gpt-5.6-sol");
+    expect(activateLlmProfileMock).toHaveBeenCalledWith(profileName);
     expect(screen.getByTestId("onboarding-slide-2")).toHaveAttribute(
       "data-active",
       "true",

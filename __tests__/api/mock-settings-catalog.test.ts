@@ -8,6 +8,8 @@ import {
   OPENAI_SUBSCRIPTION_MODELS_PATH,
   OPENAI_SUBSCRIPTION_STATUS_PATH,
 } from "#/constants/llm-subscription";
+import { TOKEN_HARBOR_PROVIDER } from "#/constants/token-harbor";
+import { DEFAULT_SETTINGS } from "#/services/settings";
 
 const BASE_URL = "http://localhost:3000";
 
@@ -56,7 +58,7 @@ describe("mock agent-server discovery", () => {
       verified_providers: string[];
       default_model: string;
     }>("/api/options/models");
-    expect(options.default_model).toBe("openai/gpt-5.6-sol");
+    expect(options.default_model).toBe(DEFAULT_SETTINGS.llm_model);
     expect(options.models).toEqual(serverInfo.models);
     expect(options.verified_models).toEqual([
       "claude-opus-4-5-20251101",
@@ -112,11 +114,14 @@ describe("mock agent-server discovery", () => {
     const providers = await fetchJson<{ providers: string[] }>(
       "/api/llm/providers",
     );
+    // Backend order is not display order: the client pins Token Harbor to the
+    // top of the picker itself.
     expect(providers.providers).toEqual([
       "anthropic",
       "openai",
       "openhands",
       "sambanova",
+      TOKEN_HARBOR_PROVIDER,
     ]);
   });
 
@@ -131,6 +136,7 @@ describe("mock agent-server discovery", () => {
       { name: "openai", verified: true },
       { name: "openhands", verified: true },
       { name: "sambanova", verified: false },
+      { name: TOKEN_HARBOR_PROVIDER, verified: true },
     ]);
 
     const matching = await fetchJson<{ items: { name: string }[] }>(

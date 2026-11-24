@@ -301,8 +301,20 @@ trap cleanup EXIT SIGINT SIGTERM
 # ── 1. Start Agent Server ────────────────────────────────────────────────────
 log "Starting agent-server on port $AGENT_SERVER_PORT..."
 
-if command -v openhands-agent-server >/dev/null 2>&1; then
-  # Binary build (production image)
+# The agent-server binary is a self-contained bundle: it carries its own copy of
+# the SDK and litellm, so the SDK/litellm forks this image pip-installs into the
+# interpreter never reach it. Running the installed module instead keeps the
+# server on the pinned forks (provider catalog, model map). Set
+# AGENT_CANVAS_AGENT_SERVER_LAUNCH=binary to force the bundled executable.
+AGENT_SERVER_LAUNCH="${AGENT_CANVAS_AGENT_SERVER_LAUNCH:-auto}"
+
+if [ "$AGENT_SERVER_LAUNCH" != "binary" ] && \
+   python3 -c "import openhands.agent_server" >/dev/null 2>&1; then
+  # Installed SDK (this image pins it from the fork)
+  python3 -m openhands.agent_server --port "$AGENT_SERVER_PORT" \
+    --import-modules "$AGENT_SERVER_IMPORT_MODULES" &
+elif command -v openhands-agent-server >/dev/null 2>&1; then
+  # Binary build (stock agent-server base image)
   openhands-agent-server --port "$AGENT_SERVER_PORT" \
     --import-modules "$AGENT_SERVER_IMPORT_MODULES" &
 elif [ -x /agent-server/.venv/bin/python ]; then

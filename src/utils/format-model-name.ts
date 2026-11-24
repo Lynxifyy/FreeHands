@@ -22,7 +22,25 @@ export const DEEPSEEK_MODEL_LABELS: Readonly<Record<string, string>> = {
   "deepseek/deepseek-v4-flash": "DeepSeek V4 Flash",
   "deepseek/deepseek-chat": "DeepSeek Chat",
   "deepseek/deepseek-reasoner": "DeepSeek Reasoner",
+  "tokenharbor/deepseek-v4.1-flash": "DeepSeek V4.1 Flash",
+  "tokenharbor/deepseek-v4.1-flash:free": "DeepSeek V4.1 Flash",
 };
+
+/**
+ * Route suffix marking a free variant (`deepseek-v4.1-flash:free`). It is part
+ * of the model id, not of the model name, so display code strips it and shows
+ * the same free marker as a DB-flagged free model.
+ */
+const FREE_ROUTE_SUFFIX = ":free";
+
+function splitFreeRouteSuffix(model: string): {
+  id: string;
+  free: boolean;
+} {
+  return model.endsWith(FREE_ROUTE_SUFFIX)
+    ? { id: model.slice(0, -FREE_ROUTE_SUFFIX.length), free: true }
+    : { id: model, free: false };
+}
 
 /** The model FreeHands recommends for coding. */
 export const RECOMMENDED_DEEPSEEK_MODEL = "openhands/deepseek-v4.1-flash";
@@ -122,9 +140,10 @@ export function formatNativeModelName(
   freeModels: FreeModelSet = EMPTY_FREE_MODELS,
 ): string | null {
   if (!model) return null;
-  const isFree = isFreeOpenHandsModel(model, freeModels);
-  const lastSegment = model.split("/").pop();
-  return appendFreeSuffix(lastSegment || model, isFree);
+  const { id, free: freeRoute } = splitFreeRouteSuffix(model);
+  const isFree = freeRoute || isFreeOpenHandsModel(model, freeModels);
+  const lastSegment = id.split("/").pop();
+  return appendFreeSuffix(lastSegment || id, isFree);
 }
 
 /**
@@ -137,9 +156,13 @@ export function formatModelPillLabel(
   freeModels: FreeModelSet = EMPTY_FREE_MODELS,
 ): string | null {
   if (!model) return null;
+  const { free: freeRoute } = splitFreeRouteSuffix(model);
   const display =
     model in FREE_OPENHANDS_MODELS
       ? FREE_OPENHANDS_MODELS[model as keyof typeof FREE_OPENHANDS_MODELS]
       : (deepSeekModelLabel(model) ?? model);
-  return appendFreeSuffix(display, isFreeOpenHandsModel(model, freeModels));
+  return appendFreeSuffix(
+    display,
+    freeRoute || isFreeOpenHandsModel(model, freeModels),
+  );
 }

@@ -28,6 +28,11 @@ import { useAgentSettingsSchema } from "#/hooks/query/use-agent-settings-schema"
 import { useBackendsHealth } from "#/hooks/query/use-backends-health";
 import { LlmSettingsInputsSkeleton } from "#/components/features/settings/llm-settings/llm-settings-inputs-skeleton";
 import { deriveProfileNameFromModel } from "#/utils/derive-profile-name";
+import {
+  TOKEN_HARBOR_DEFAULT_MODEL,
+  TOKEN_HARBOR_LABEL,
+} from "#/constants/token-harbor";
+import { deepSeekModelLabel } from "#/utils/format-model-name";
 import ProfilesService, {
   type SaveProfileRequest,
 } from "#/api/profiles-service/profiles-service.api";
@@ -49,7 +54,12 @@ interface SetupLlmStepProps {
  * A fresh profile starts with this model, and Next saves it even when the user
  * leaves it as is. An existing profile keeps its own model.
  */
-export const ONBOARDING_DEFAULT_LLM_MODEL = "openai/gpt-5.6-sol";
+export const ONBOARDING_DEFAULT_LLM_MODEL = TOKEN_HARBOR_DEFAULT_MODEL;
+
+/** Friendly name for the pre-selected model, shown in the step subtitle. */
+const ONBOARDING_DEFAULT_MODEL_LABEL = `${TOKEN_HARBOR_LABEL} ${
+  deepSeekModelLabel(TOKEN_HARBOR_DEFAULT_MODEL) ?? TOKEN_HARBOR_DEFAULT_MODEL
+} (free)`;
 
 interface ProfileSeed {
   /** The existing LLM profile the form shows, or `null` for a fresh profile. */
@@ -348,11 +358,11 @@ export function SetupLlmStep({ onBack, onNext }: SetupLlmStepProps) {
           {t(I18nKey.ONBOARDING$LLM_TITLE)}
         </h2>
         <p className="text-sm text-muted">
-          {t(
-            profileSeed?.profileName
-              ? I18nKey.ONBOARDING$LLM_SUBTITLE_CURRENT_PROFILE
-              : I18nKey.ONBOARDING$LLM_SUBTITLE,
-          )}
+          {profileSeed?.profileName
+            ? t(I18nKey.ONBOARDING$LLM_SUBTITLE_CURRENT_PROFILE)
+            : t(I18nKey.ONBOARDING$LLM_SUBTITLE, {
+                model: ONBOARDING_DEFAULT_MODEL_LABEL,
+              })}
         </p>
       </header>
 

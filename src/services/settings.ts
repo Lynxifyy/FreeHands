@@ -1,7 +1,8 @@
 import { Settings } from "#/types/settings";
+import { TOKEN_HARBOR_DEFAULT_MODEL } from "#/constants/token-harbor";
 
 export const DEFAULT_SETTINGS: Settings = {
-  llm_model: "openai/gpt-5.6-sol",
+  llm_model: TOKEN_HARBOR_DEFAULT_MODEL,
   llm_base_url: "",
   agent: "CodeActAgent",
   language: "en",
@@ -37,7 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
     agent_kind: "openhands",
     agent: "CodeActAgent",
     llm: {
-      model: "openai/gpt-5.6-sol",
+      model: TOKEN_HARBOR_DEFAULT_MODEL,
     },
     condenser: {
       enabled: true,

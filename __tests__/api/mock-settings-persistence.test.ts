@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "#/mocks/node";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SettingsSchema } from "#/types/settings";
+import { DEFAULT_SETTINGS } from "#/services/settings";
 import {
   OPENAI_SUBSCRIPTION_DEVICE_POLL_PATH,
   OPENAI_SUBSCRIPTION_STATUS_PATH,
@@ -131,9 +132,15 @@ describe("mock settings schemas and state", () => {
     };
     const expectedAgent = {
       tool_concurrency_limit: contract("general", "integer", 1, "major"),
-      "llm.model": contract("llm", "string", "openai/gpt-5.6-sol", "critical", {
-        required: true,
-      }),
+      "llm.model": contract(
+        "llm",
+        "string",
+        DEFAULT_SETTINGS.llm_model,
+        "critical",
+        {
+          required: true,
+        },
+      ),
       "llm.api_key": contract("llm", "string", null, "critical", {
         secret: true,
       }),
@@ -320,7 +327,7 @@ describe("mock settings schemas and state", () => {
     expect(modern.response.ok).toBe(true);
     expect(modern.body).toMatchObject({
       agent_settings: {
-        llm: { model: "openai/gpt-5.6-sol" },
+        llm: { model: DEFAULT_SETTINGS.llm_model },
         condenser: { enable_default_condenser: true, condenser_max_size: null },
         tool_concurrency_limit: 1,
       },
@@ -344,7 +351,7 @@ describe("mock settings schemas and state", () => {
     expect(legacy.response.ok).toBe(true);
     expect(legacy.body.agent_settings).toEqual(
       expect.objectContaining({
-        llm: expect.objectContaining({ model: "openai/gpt-5.6-sol" }),
+        llm: expect.objectContaining({ model: DEFAULT_SETTINGS.llm_model }),
       }),
     );
   });
@@ -412,7 +419,7 @@ describe("mock settings schemas and state", () => {
     expect(update.body).toMatchObject({
       agent_settings: {
         llm: {
-          model: "openai/gpt-5.6-sol",
+          model: DEFAULT_SETTINGS.llm_model,
           api_key: "sk-secret",
           base_url: "https://api.example.test/v1",
           stop: ["DONE"],
@@ -661,7 +668,7 @@ describe("mock settings schemas and state", () => {
       max_iterations: 99,
     });
     expect(result.body.agent_settings).toMatchObject({
-      llm: { model: "openai/gpt-5.6-sol" },
+      llm: { model: DEFAULT_SETTINGS.llm_model },
       verification: { critic_enabled: false },
     });
     expect(result.body.misc_settings).toEqual({ app_preferences: {} });

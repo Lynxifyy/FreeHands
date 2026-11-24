@@ -2,6 +2,10 @@ import { http, delay, HttpResponse } from "msw";
 import { WebClientConfig } from "#/api/option-service/option.types";
 import type { SaveProfileRequest } from "#/api/profiles-service/profiles-service.api";
 import { DEFAULT_SETTINGS } from "#/services/settings";
+import {
+  TOKEN_HARBOR_DEFAULT_MODEL,
+  TOKEN_HARBOR_PROVIDER,
+} from "#/constants/token-harbor";
 import { Settings, SettingsValue } from "#/types/settings";
 import {
   OPENAI_SUBSCRIPTION_DEVICE_POLL_PATH,
@@ -567,6 +571,7 @@ const MOCK_MODELS = [
   "openhands/deepseek-v4-flash",
   "openhands/glm-5.2",
   "sambanova/Meta-Llama-3.1-8B-Instruct",
+  TOKEN_HARBOR_DEFAULT_MODEL,
 ];
 
 const MOCK_OPENAI_SUBSCRIPTION_MODELS = ["gpt-5.2", "gpt-5.3-codex"];
@@ -591,6 +596,7 @@ const MOCK_FREE_MODELS = new Set(["openhands/glm-5.2"]);
 const MOCK_DEFAULT_MODEL = "openhands/glm-5.2";
 
 const MOCK_VERIFIED_PROVIDERS = [
+  TOKEN_HARBOR_PROVIDER,
   "openhands",
   "anthropic",
   "openai",
@@ -714,7 +720,7 @@ export const SETTINGS_HANDLERS = [
         "claude-sonnet-4-5-20250929",
       ],
       verified_providers: MOCK_VERIFIED_PROVIDERS,
-      default_model: "openai/gpt-5.6-sol",
+      default_model: TOKEN_HARBOR_DEFAULT_MODEL,
     }),
   ),
 

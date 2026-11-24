@@ -86,7 +86,7 @@ ARG AGENT_SERVER_SDK_GIT_REF="87d6cc8a61c2f17f6a092a3093ebff48eaf95a83"
 # entries FreeHands relies on are present. Mirrors config/defaults.json
 # (`litellmSource`). Pass an empty LITELLM_GIT_REF to keep stock PyPI litellm.
 ARG LITELLM_GIT_REPO="https://github.com/Lynxifyy/litellm-2.0"
-ARG LITELLM_GIT_REF="1c06cd8b3c49b943da9674c15949a818dd14b19c"
+ARG LITELLM_GIT_REF="4839f723abd9a656fcfe6c62ee4acd676a4f9544"
 ARG OPENHANDS_BUILD_GIT_SHA=unknown
 ARG OPENHANDS_BUILD_GIT_REF=unknown
 ARG VITE_BASE_PATH="/canvas"
@@ -116,7 +116,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     MALLOC_ARENA_MAX=2 \
     UV_THREADPOOL_SIZE=64 \
-    FREEHANDS_MAX_ACTIVE_CHATS=3
+    FREEHANDS_MAX_ACTIVE_CHATS=3 \
+    LITELLM_LOCAL_MODEL_COST_MAP=True
 
 USER root
 

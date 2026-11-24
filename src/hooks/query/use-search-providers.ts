@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import ConfigService from "#/api/config-service/config-service.api";
 import type { LLMProvider } from "#/api/config-service/config-service.types";
+import { PINNED_PROVIDERS } from "#/constants/token-harbor";
 import { useActiveBackend } from "#/contexts/active-backend-context";
 import {
   VERIFIED_MODELS_GC_TIME,
@@ -55,6 +56,20 @@ async function fetchAllProviders(
   return [...page.items, ...rest];
 }
 
+/**
+ * Move the providers FreeHands ships with to the top of the list, preserving
+ * the backend's order for everything else. A pinned provider the backend does
+ * not expose (e.g. an older agent server) is left out rather than injected, so
+ * the picker never offers a provider whose models cannot be listed.
+ */
+export function pinCuratedProviders(providers: LLMProvider[]): LLMProvider[] {
+  const pinned = PINNED_PROVIDERS.map((name) =>
+    providers.find((provider) => provider.name === name),
+  ).filter((provider): provider is LLMProvider => provider !== undefined);
+  const pinnedNames = new Set(pinned.map((provider) => provider.name));
+  return [...pinned, ...providers.filter((p) => !pinnedNames.has(p.name))];
+}
+
 export const useSearchProviders = () => {
   // `ActiveBackendProvider` deliberately does not blanket-invalidate on
   // backend/org switches, so the query key must carry the active backend
@@ -79,7 +94,13 @@ export const useSearchProviders = () => {
       // The local backend returns a single page with `next_page_id: null`
       // so this loop is a no-op there; on the cloud backend it walks the
       // cursor to exhaustion.
-      return fetchAllProviders(verifiedByProvider, null, new Set(), 0);
+      const providers = await fetchAllProviders(
+        verifiedByProvider,
+        null,
+        new Set(),
+        0,
+      );
+      return pinCuratedProviders(providers);
     },
     staleTime: VERIFIED_MODELS_STALE_TIME,
     gcTime: VERIFIED_MODELS_GC_TIME,

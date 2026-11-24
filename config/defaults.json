@@ -12,9 +12,9 @@
     "gitRef": "87d6cc8a61c2f17f6a092a3093ebff48eaf95a83"
   },
   "litellmSource": {
-    "_comment": "Where litellm is installed from. The openhands-sdk requires litellm>=1.93.0 and consumes litellm's model map to advertise model capabilities (vision, streaming, function calling). This fork is upstream v1.93.0 plus the DeepSeek V4/V4.1 model-map entries FreeHands relies on (deepseek-v4.1-flash is the recommended default model; deepseek-v4-flash-vision-exp is in the SDK's verified list) that upstream still lacks. Pin gitRef to an immutable commit for reproducible installs and bump it when the fork advances. Overridable per-run by OH_LITELLM_VERSION (stock PyPI) or by omitting it in a stock install.",
+    "_comment": "Where litellm is installed from. The openhands-sdk requires litellm>=1.93.0 and consumes litellm's model map to advertise model capabilities (vision, streaming, function calling). This fork is upstream v1.93.0 plus the DeepSeek V4/V4.1 model-map entries and the Token Harbor (tokenharbor) provider FreeHands relies on (deepseek-v4.1-flash is the recommended default model; deepseek-v4-flash-vision-exp is in the SDK's verified list) that upstream still lacks. Pin gitRef to an immutable commit for reproducible installs and bump it when the fork advances. Overridable per-run by OH_LITELLM_VERSION (stock PyPI) or by omitting it in a stock install.",
     "gitRepo": "https://github.com/Lynxifyy/litellm-2.0",
-    "gitRef": "1c06cd8b3c49b943da9674c15949a818dd14b19c"
+    "gitRef": "4839f723abd9a656fcfe6c62ee4acd676a4f9544"
   },
   "compatibility": {
     "minimumAgentServer": "1.51.0"

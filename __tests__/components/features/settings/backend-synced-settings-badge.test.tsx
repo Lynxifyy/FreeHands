@@ -16,18 +16,18 @@ import {
 import * as orgService from "#/api/cloud/organization-service.api";
 import type { Backend } from "#/api/backend-registry/types";
 
-// Override the global react-i18next mock for this file. The badge under
-// test interpolates `{{name}}` and `{{host}}`, and one regression we
-// care about is that the host's `/` characters render literally rather
-// than HTML-escaped (`&#x2F;`). The mock below performs `{{var}}`
-// substitution and applies i18next's default HTML escape unless
-// `interpolation.escapeValue === false` — exactly what the production
-// runtime does — so a missing opt-out would surface as escaped output.
+// Override the global react-i18next mock for this file. The badge
+// interpolates `{{name}}`, and one regression we care about is that a
+// backend name renders literally rather than HTML-escaped (`&#x2F;` for a
+// `/`). The mock below performs `{{var}}` substitution and applies
+// i18next's default HTML escape unless `interpolation.escapeValue === false`
+// — exactly what the production runtime does — so a missing opt-out would
+// surface as escaped output.
 vi.mock("react-i18next", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-i18next")>();
   const TEMPLATES: Record<string, string> = {
     SETTINGS$BACKEND_SYNCED_BADGE:
-      "These settings are synced from {{name}} backend ({{host}})",
+      "These settings belong to the {{name}} backend",
   };
   const htmlEscape = (s: string) =>
     s
@@ -155,20 +155,18 @@ describe("BackendSyncedSettingsBadge", () => {
     },
   );
 
-  it("renders the seeded default local backend label and host URL without HTML-escaping", () => {
+  it("renders the seeded default local backend name without HTML-escaping", () => {
     // Arrange — no explicit setRegisteredBackends() in this test; the
     // active store auto-seeds a default local backend named "Local".
     // Act
     renderBadge();
 
-    // Assert — the default name slot resolves to "Local" and the host
-    // URL is preserved literally (no `&#x2F;` from i18next escape).
+    // Assert — the name slot resolves to "Local" and is preserved
+    // literally (no HTML entity from the i18next escape).
     const text = screen.getByTestId(
       "backend-synced-settings-badge",
     ).textContent;
-    expect(text).toMatch(
-      /These settings are synced from Local backend \(https?:\/\/.+\)/,
-    );
+    expect(text).toBe("These settings belong to the Local backend");
     expect(text).not.toContain("&#x2F;");
   });
 

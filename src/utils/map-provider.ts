@@ -1,3 +1,5 @@
+import { TOKEN_HARBOR_LABEL } from "#/constants/token-harbor";
+
 // These are provider names, not user-facing text
 export const MAP_PROVIDER = {
   openai: "OpenAI",
@@ -28,6 +30,7 @@ export const MAP_PROVIDER = {
   lemonade: "Lemonade",
   clarifai: "Clarifai",
   moonshot: "Moonshot",
+  tokenharbor: TOKEN_HARBOR_LABEL,
 };
 
 export const mapProvider = (provider: string) =>

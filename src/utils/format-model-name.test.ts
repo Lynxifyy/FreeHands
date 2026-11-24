@@ -4,9 +4,11 @@ import {
   RECOMMENDED_DEEPSEEK_MODEL,
   deepSeekModelLabel,
   formatModelPillLabel,
+  formatNativeModelName,
   isDeepSeekModel,
   thinkingModelLabel,
 } from "./format-model-name";
+import { TOKEN_HARBOR_DEFAULT_MODEL } from "#/constants/token-harbor";
 
 describe("formatModelPillLabel", () => {
   it("keeps the pretty OpenHands label without a free suffix unless backend marks it free", () => {
@@ -25,6 +27,23 @@ describe("formatModelPillLabel", () => {
   it("pretty-prints a direct DeepSeek model id", () => {
     expect(formatModelPillLabel("deepseek/deepseek-v4.1-flash")).toBe(
       "DeepSeek V4.1 Flash",
+    );
+  });
+
+  it("marks the Token Harbor free route as free without showing the route suffix", () => {
+    expect(formatModelPillLabel(TOKEN_HARBOR_DEFAULT_MODEL)).toBe(
+      "DeepSeek V4.1 Flash (free)",
+    );
+  });
+});
+
+describe("formatNativeModelName", () => {
+  it("strips the provider route and keeps the free marker", () => {
+    expect(formatNativeModelName(TOKEN_HARBOR_DEFAULT_MODEL)).toBe(
+      "deepseek-v4.1-flash (free)",
+    );
+    expect(formatNativeModelName("tokenharbor/deepseek-v4.1-flash")).toBe(
+      "deepseek-v4.1-flash",
     );
   });
 });
@@ -58,6 +77,9 @@ describe("DeepSeek model helpers", () => {
 describe("thinkingModelLabel", () => {
   it("names a DeepSeek model for the live thinking status", () => {
     expect(thinkingModelLabel(RECOMMENDED_DEEPSEEK_MODEL)).toBe(
+      "DeepSeek V4.1 Flash",
+    );
+    expect(thinkingModelLabel(TOKEN_HARBOR_DEFAULT_MODEL)).toBe(
       "DeepSeek V4.1 Flash",
     );
     expect(thinkingModelLabel("deepseek/deepseek-reasoner")).toBe(

@@ -6,9 +6,24 @@ import {
   SetupLlmStep,
 } from "#/components/features/onboarding/steps/setup-llm-step";
 import { I18nKey } from "#/i18n/declaration";
+import { deriveProfileNameFromModel } from "#/utils/derive-profile-name";
+import { deepSeekModelLabel } from "#/utils/format-model-name";
+import { TOKEN_HARBOR_LABEL } from "#/constants/token-harbor";
 import type { SdkSectionSaveControl } from "#/components/features/settings/sdk-settings/sdk-section-page";
 import type { SettingsFormValues } from "#/utils/sdk-settings-schema";
 import { renderWithProviders } from "../../../test-utils";
+
+// The subtitle names the pre-selected model through `t(key, { model })`; the
+// global mock drops interpolation, so render the value here to keep the
+// "subtitle follows the default model" contract observable.
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, unknown>) =>
+      opts && "model" in opts ? `${key}:${String(opts.model)}` : key,
+    i18n: { language: "en", exists: () => false },
+  }),
+}));
 
 const saveProfile = vi.hoisted(() => vi.fn());
 const activateProfile = vi.hoisted(() => vi.fn());
@@ -298,7 +313,14 @@ describe("SetupLlmStep", () => {
 
     await waitFor(() => expect(onNext).toHaveBeenCalledTimes(1));
     expect(getProfile).not.toHaveBeenCalled();
-    expect(screen.getByText("ONBOARDING$LLM_SUBTITLE")).toBeInTheDocument();
+    const defaultModelLabel = deepSeekModelLabel(ONBOARDING_DEFAULT_LLM_MODEL);
+    expect(
+      screen.getByText(
+        new RegExp(
+          `ONBOARDING\\$LLM_SUBTITLE:${TOKEN_HARBOR_LABEL} ${defaultModelLabel}`,
+        ),
+      ),
+    ).toBeInTheDocument();
     expect(formState.screenProps?.initialValueOverrides).toMatchObject({
       "llm.model": ONBOARDING_DEFAULT_LLM_MODEL,
       "llm.api_key": "",
@@ -414,14 +436,17 @@ describe("SetupLlmStep", () => {
     await clickNext();
 
     await waitFor(() => expect(onNext).toHaveBeenCalledTimes(1));
-    expect(saveProfile).toHaveBeenCalledWith("gpt-5.6-sol", {
-      llm: {
-        ...API_KEY_PROFILE_DEFAULTS,
-        model: ONBOARDING_DEFAULT_LLM_MODEL,
-        api_key: "sk-test",
+    expect(saveProfile).toHaveBeenCalledWith(
+      deriveProfileNameFromModel(ONBOARDING_DEFAULT_LLM_MODEL),
+      {
+        llm: {
+          ...API_KEY_PROFILE_DEFAULTS,
+          model: ONBOARDING_DEFAULT_LLM_MODEL,
+          api_key: "sk-test",
+        },
+        include_secrets: true,
       },
-      include_secrets: true,
-    });
+    );
   });
 
   it("drops the hidden Base URL when the model changes in the Basic view", async () => {

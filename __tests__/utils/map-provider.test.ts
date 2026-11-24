@@ -1,5 +1,9 @@
 import { test, expect } from "vitest";
 import { getProviderId, mapProvider } from "../../src/utils/map-provider";
+import {
+  TOKEN_HARBOR_LABEL,
+  TOKEN_HARBOR_PROVIDER,
+} from "../../src/constants/token-harbor";
 
 test("mapProvider", () => {
   expect(mapProvider("azure")).toBe("Azure");
@@ -26,6 +30,7 @@ test("mapProvider", () => {
   expect(mapProvider("openrouter")).toBe("OpenRouter");
   expect(mapProvider("clarifai")).toBe("Clarifai");
   expect(mapProvider("moonshot")).toBe("Moonshot");
+  expect(mapProvider("tokenharbor")).toBe(TOKEN_HARBOR_LABEL);
 });
 
 test("getProviderId round-trips the display name back to the provider id", () => {
@@ -33,5 +38,6 @@ test("getProviderId round-trips the display name back to the provider id", () =>
   // display name must map back to that id, not to a misspelling of it.
   expect(getProviderId("Perplexity AI")).toBe("perplexity");
   expect(getProviderId("OpenAI")).toBe("openai");
+  expect(getProviderId(TOKEN_HARBOR_LABEL)).toBe(TOKEN_HARBOR_PROVIDER);
   expect(getProviderId("Some New Provider")).toBe("Some New Provider");
 });
