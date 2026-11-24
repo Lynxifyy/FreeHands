@@ -76,8 +76,8 @@
                 <dd>new built-in automations</dd>
               </div>
               <div>
-                <dt>0</dt>
-                <dd>config needed for the free router</dd>
+                <dt>$0</dt>
+                <dd>for the default model route</dd>
               </div>
             </dl>
           </div>
@@ -175,10 +175,11 @@
 
             <article class="feature-card">
               <span class="feature-icon">⌘</span>
-              <h3>Free model router</h3>
+              <h3>Free by default</h3>
               <p>
-                Router Pro and Router Flash pick a model per task. They work out of the box, and
-                you can point them at your own provider whenever you want.
+                Conversations start on Token Harbor's DeepSeek V4.1 Flash free route: add one free
+                key and it costs nothing. Router Pro and Router Flash still pick a model per task,
+                and you can point either at your own provider.
               </p>
             </article>
 
@@ -342,9 +343,10 @@
   -e FREEHANDS_MAX_ACTIVE_CHATS=3 \
   -v "$HOME/.openhands:/home/openhands/.openhands" \
   -v "$HOME/projects:/projects" \
-  ghcr.io/lynxifyy/freehands-agent-canvas:1.33.0</code></pre>
+  ghcr.io/lynxifyy/freehands-agent-canvas:1.33.1</code></pre>
             <p class="install-note">
-              Then open <code>http://localhost:8000/canvas/</code>. Set
+              Then open <code>http://localhost:8000/canvas/</code> and paste a free Token Harbor
+              API key into Settings &rarr; LLM, or pick any other provider there. Set
               <code>AGENT_CANVAS_ALLOW_LAN_SESSION_KEY=true</code> only when the port is reachable
               by you alone.
             </p>
